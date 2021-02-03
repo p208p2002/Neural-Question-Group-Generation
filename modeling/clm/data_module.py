@@ -106,10 +106,10 @@ class RaceDataset(Dataset):
             label = self.sep_token.join(questions) 
 
             if not self.no_label:
-                model_input = self._prepare_input(context, self.tokenizer.bos_token + label + self.tokenizer.eos_token)
+                model_input = self._prepare_input(context + self.tokenizer.bos_token, label= label)
                 return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
             else:
-                model_input = self._prepare_input(context,label=None)
+                model_input = self._prepare_input(context + self.tokenizer.bos_token, label= None)
                 return model_input['input_ids'],model_input['attention_mask']
             
     def __len__(self):

@@ -1,20 +1,19 @@
 import pytorch_lightning as pl
-from modeling.gpt2 import argparser
-from modeling.gpt2.model import Model
-from modeling.gpt2.data_module import DataModule
+from modeling.clm import argparser
+from modeling.clm.model import Model
+from modeling.clm.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 args = argparser.get_args()
 
 if __name__ == "__main__":
     
-    trainer = pl.Trainer(\
-        gpus=-1,\
-        accelerator='dp',\
-        fast_dev_run=1 if args.dev else False,\
-        precision=32,\
-        log_every_n_steps=1 if args.dev else 50,
-        default_root_dir='.log_gpt2',
+    trainer = pl.Trainer(
+        gpus=-1,
+        accelerator='dp',
+        fast_dev_run=args.dev,
+        precision=32,
+        default_root_dir='.log_clm',
         max_epochs=args.epoch,
         checkpoint_callback= not args.run_test,
         callbacks=[

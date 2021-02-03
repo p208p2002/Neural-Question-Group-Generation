@@ -2,4 +2,4 @@
 datasets/
 test.py
 *__py*__/
-.log_gpt2/
+.log_*/
