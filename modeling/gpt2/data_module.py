@@ -1,11 +1,35 @@
-from torch.utils.data import DataLoader,Dataset
+from torch.utils.data import DataLoader,Dataset,ConcatDataset
 import os
 import json
 from .tokenizer import get_tokenizer
+from .argparser import get_args
 import torch
+import pytorch_lightning as pl
+args = get_args()
+
+class DataModule(pl.LightningDataModule):
+    def __init__(self):
+        super().__init__()
+        self.batch_size = args.batch_size
+        
+    def setup(self, stage=None):
+        if stage == 'fit':
+            self.train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
+            self.test_dataset = RaceDataset('test','all',no_label=False)
+        elif stage == 'test':
+            self.test_dataset = RaceDataset('test','all',no_label=True)
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True)
+
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
 
 class RaceDataset(Dataset):
-    def __init__(self,split_set,level,dataset_dir='datasets/RACE'):
+    def __init__(self,split_set,level,dataset_dir='datasets/RACE',no_label=False):
         super().__init__()
         assert split_set in ['dev','test','train']
         assert level in ['all','middle','high']
@@ -25,12 +49,17 @@ class RaceDataset(Dataset):
         self.pad_token_id = self.tokenizer.pad_token_id
         self.no_question = "There is no question to ask?"
         self.max_length = 1024
-        self.max_context_length = 824
+        self.max_context_length = 850
+        self.no_label = no_label
 
         # print(self.pad_token_id)
     
-    def _prepare_input(self,context,label):
+    def _prepare_input(self,context,label=None):
         tokenizer = self.tokenizer
+
+        if label is None:
+            return tokenizer(context,return_tensors='pt',max_length=self.max_context_length,truncation=True)
+
         context_input = tokenizer(context)
         
         label_input = tokenizer(label)
@@ -74,11 +103,14 @@ class RaceDataset(Dataset):
             
             if len(questions) == 0:
                 questions.append(self.no_question)
-            label = self.sep_token + self.sep_token.join(questions) + self.sep_token
+            label = self.sep_token.join(questions) 
 
-            model_input = self._prepare_input(context,label)
+            if not self.no_label:
+                model_input = self._prepare_input(context, self.tokenizer.bos_token + label + self.tokenizer.eos_token)
+                return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
+            else:
+                model_input = self._prepare_input(context,label=None)
+                return model_input['input_ids'],model_input['attention_mask']
             
-        return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
-        
     def __len__(self):
         return len(self.all_file_paths)
