@@ -58,7 +58,10 @@ class RaceDataset(Dataset):
         tokenizer = self.tokenizer
 
         if label is None:
-            return tokenizer(context,return_tensors='pt',max_length=self.max_context_length,truncation=True)
+            model_input = tokenizer(context,return_tensors='pt',max_length=self.max_context_length,truncation=True)
+            model_input['input_ids'] = model_input['input_ids'].squeeze(0) # fix shape bug with tokenizer
+            model_input['attention_mask'] = model_input['attention_mask'].squeeze(0) # fix shape bug with tokenizer
+            return model_input
 
         context_input = tokenizer(context)
         

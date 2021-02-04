@@ -3,6 +3,7 @@ from transformers import AutoModelForCausalLM
 from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
+import re
 args = get_args()
 
 class Model(pl.LightningModule):
@@ -25,7 +26,7 @@ class Model(pl.LightningModule):
         self.log('dev_loss',loss)
     
     def test_step(self, batch, batch_idx):
-        input_ids = batch[0].squeeze(0)
+        input_ids = batch[0]
         input_ids_len = input_ids.shape[-1]
         sample_outputs = self.model.generate(
             input_ids = input_ids,
@@ -39,7 +40,8 @@ class Model(pl.LightningModule):
 
         print("Output:\n" + 100 * '-')
         for i, sample_output in enumerate(sample_outputs):
-            decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=True).split('?')
+            decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
+            decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions).split(self.tokenizer.sep_token)
             for j,q in enumerate(decode_questions):
                 print(i,j,q)
             print()
