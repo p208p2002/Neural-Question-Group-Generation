@@ -4,6 +4,8 @@ from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
 import re
+import os
+import json
 args = get_args()
 
 class Model(pl.LightningModule):
@@ -28,23 +30,41 @@ class Model(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         input_ids = batch[0]
         input_ids_len = input_ids.shape[-1]
+        batch_size = input_ids.shape[0]
+        assert batch_size == 1
+
+        num_return_sequences = 1
         sample_outputs = self.model.generate(
             input_ids = input_ids,
             do_sample=True, 
             max_length=1024,
             top_k=20, 
             top_p=0.85, 
-            num_return_sequences=1,
-            eos_token_id=self.tokenizer.pad_token_id
+            num_return_sequences=num_return_sequences,
+            eos_token_id=self.tokenizer.pad_token_id,
+            pad_token_id=self.tokenizer.pad_token_id
         )
 
-        print("Output:\n" + 100 * '-')
-        for i, sample_output in enumerate(sample_outputs):
+        assert len(sample_outputs) == num_return_sequences
+        
+        for i,sample_output in enumerate(sample_outputs):
             decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions).split(self.tokenizer.sep_token)
-            for j,q in enumerate(decode_questions):
-                print(i,j,q)
-            print()
-            
+        return {'batch_idx':batch_idx,'questions':decode_questions}
+    
+    def test_epoch_end(self,outputs):
+        # flatten
+        for output in outputs:
+            for k in output.keys():
+                output[k] = output[k][0]
+        
+        # log
+        log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
+        os.makedirs(log_dir,exist_ok=True)
+        with open(os.path.join(log_dir,'predict.jsonl'),'w',encoding='utf-8') as log_f:
+            for output in outputs:
+                output_str = json.dumps(output,ensure_ascii=False) + '\n'
+                log_f.write(output_str)
+                
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
