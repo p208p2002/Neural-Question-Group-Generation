@@ -47,7 +47,7 @@ class RaceDataset(Dataset):
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
-        self.no_question = "There is no question to ask?"
+        self.no_question = "what about we don't ask question for now?"
         self.max_length = 1024
         self.max_context_length = 850
         self.no_label = no_label
@@ -104,8 +104,8 @@ class RaceDataset(Dataset):
                 if _q[-1] == '?': # keep only type is question
                     questions.append(_q)
             
-            if len(questions) == 0:
-                questions.append(self.no_question)
+            # if len(questions) == 0:
+            questions.append(self.no_question)
             label = self.sep_token.join(questions) 
 
             if not self.no_label:
