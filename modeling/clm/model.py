@@ -38,11 +38,11 @@ class Model(pl.LightningModule):
             input_ids = input_ids,
             max_length=1024,
             early_stopping=True,
-            temperature=0.75,
+            temperature=0.8,
             do_sample=True,
             top_p=0.80,
             top_k=10,
-            no_repeat_ngram_size=3,
+            no_repeat_ngram_size=4,
             num_return_sequences=num_return_sequences,
             eos_token_id=self.tokenizer.pad_token_id,
             pad_token_id=self.tokenizer.pad_token_id
