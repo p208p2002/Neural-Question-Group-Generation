@@ -36,10 +36,12 @@ class Model(pl.LightningModule):
         num_return_sequences = 1
         sample_outputs = self.model.generate(
             input_ids = input_ids,
-            do_sample=True, 
             max_length=1024,
-            top_k=20, 
-            top_p=0.85, 
+            early_stopping=True,
+            temperature=0.75,
+            do_sample=True,
+            top_p=0.80,
+            top_k=10,
             num_return_sequences=num_return_sequences,
             eos_token_id=self.tokenizer.pad_token_id,
             pad_token_id=self.tokenizer.pad_token_id
@@ -50,21 +52,14 @@ class Model(pl.LightningModule):
         for i,sample_output in enumerate(sample_outputs):
             decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions).split(self.tokenizer.sep_token)
-        return {'batch_idx':batch_idx,'questions':decode_questions}
-    
-    def test_epoch_end(self,outputs):
-        # flatten
-        for output in outputs:
-            for k in output.keys():
-                output[k] = output[k][0]
-        
+        output =  {'batch_idx':batch_idx,'questions':decode_questions}
+
         # log
         log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
         os.makedirs(log_dir,exist_ok=True)
-        with open(os.path.join(log_dir,'predict.jsonl'),'w',encoding='utf-8') as log_f:
-            for output in outputs:
-                output_str = json.dumps(output,ensure_ascii=False) + '\n'
-                log_f.write(output_str)
+        with open(os.path.join(log_dir,'predict.jsonl'),'a',encoding='utf-8') as log_f:
+            output_str = json.dumps(output,ensure_ascii=False) + '\n'
+            log_f.write(output_str)
                 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
