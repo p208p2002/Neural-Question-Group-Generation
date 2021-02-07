@@ -44,7 +44,7 @@ class Model(pl.LightningModule):
             top_k=10,
             no_repeat_ngram_size=4,
             num_return_sequences=num_return_sequences,
-            eos_token_id=self.tokenizer.pad_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id
         )
 

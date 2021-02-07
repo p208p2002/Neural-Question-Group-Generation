@@ -14,11 +14,29 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = args.batch_size
         
     def setup(self, stage=None):
-        if stage == 'fit':
-            self.train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
-            self.test_dataset = RaceDataset('test','all',no_label=False)
-        elif stage == 'test':
-            self.test_dataset = RaceDataset('test','all',no_label=True)
+        if args.dataset == 'race':
+            if stage == 'fit':
+                self.train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
+                self.test_dataset = RaceDataset('test','all',no_label=False)
+            elif stage == 'test':
+                self.test_dataset = RaceDataset('test','all',no_label=True)
+        elif args.dataset == 'eqg':
+            if stage == 'fit':
+                self.train_dataset = ConcatDataset((
+                    EQGRaceDataset('train','middle'),
+                    EQGRaceDataset('train','high'),
+                    EQGRaceDataset('dev','middle'),
+                    EQGRaceDataset('dev','high')
+                    ))
+                self.test_dataset = ConcatDataset((
+                    EQGRaceDataset('test','middle',no_label=False),
+                    EQGRaceDataset('test','high',no_label=False)
+                    ))
+            elif stage == 'test':
+                self.test_dataset = ConcatDataset((
+                    EQGRaceDataset('test','middle',no_label=True),
+                    EQGRaceDataset('test','high',no_label=True)
+                    ))
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
