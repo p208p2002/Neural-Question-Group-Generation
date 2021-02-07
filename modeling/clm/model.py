@@ -56,6 +56,9 @@ class Model(pl.LightningModule):
         for i,sample_output in enumerate(sample_outputs):
             decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions).split(self.tokenizer.sep_token)
+            if decode_questions[-1] == self.tokenizer.eos_token:
+                decode_questions.pop(-1)
+                
         output =  {'batch_idx':batch_idx,'questions':decode_questions,'labels':[_q[0] for _q in label_questions]}
 
         # log

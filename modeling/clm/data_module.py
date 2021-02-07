@@ -116,7 +116,7 @@ class RaceDataset(Dataset,UtilsMixin):
         with open(self.all_file_paths[index],'r',encoding='utf-8') as f:
             data = json.load(f)
             context = data['article']
-            _questions = data['questions']
+            _questions = data['questions'][:]
             questions = []
             for _q in _questions:
                 if _q[-1] == '?' and re.search('_',_q) is None: # keep only type is question
@@ -151,7 +151,7 @@ class EQGRaceDataset(Dataset,UtilsMixin):
     def __getitem__(self,index):
         data = json.loads(self.data_lines[index])
         context = data['article']
-        questions = data['acticle_spec_questions']
+        questions = data['acticle_spec_questions'][:]
         questions.append(self.tokenizer.eos_token)
         label = self.sep_token.join(questions) 
 
