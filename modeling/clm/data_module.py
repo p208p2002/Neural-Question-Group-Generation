@@ -5,6 +5,7 @@ from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
 import pytorch_lightning as pl
+import re
 args = get_args()
 
 class DataModule(pl.LightningDataModule):
@@ -47,7 +48,6 @@ class RaceDataset(Dataset):
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
-        self.no_question = "what about we don't ask question for now?"
         self.max_length = 1024
         self.max_context_length = 850
         self.no_label = no_label
@@ -82,7 +82,7 @@ class RaceDataset(Dataset):
         # pad or limit to max length
         pad_ids = [self.pad_token_id]*self.max_length
         pad_mask = [0]*self.max_length
-        pad_labels = [-100]*self.max_length
+        pad_labels = [self.pad_token_id]*self.max_length
 
         model_input['input_ids'] = (model_input['input_ids'] + pad_ids)[:self.max_length] 
         model_input['attention_mask'] = (model_input['attention_mask'] + pad_mask)[:self.max_length] 
@@ -101,11 +101,10 @@ class RaceDataset(Dataset):
             _questions = data['questions']
             questions = []
             for _q in _questions:
-                if _q[-1] == '?': # keep only type is question
+                if _q[-1] == '?' and re.search('_',_q) is None: # keep only type is question
                     questions.append(_q)
             
-            # if len(questions) == 0:
-            questions.append(self.no_question)
+            questions.append(self.tokenizer.eos_token)
             label = self.sep_token.join(questions) 
 
             if not self.no_label:
