@@ -130,7 +130,7 @@ class RaceDataset(Dataset,UtilsMixin):
                 return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
             else:
                 model_input = self._prepare_input(context + self.tokenizer.bos_token, label= None)
-                return model_input['input_ids'],model_input['attention_mask'],data['questions']
+                return model_input['input_ids'],model_input['attention_mask'],questions[:-1]
             
     def __len__(self):
         return len(self.all_file_paths)
