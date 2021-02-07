@@ -137,7 +137,7 @@ class RaceDataset(Dataset,UtilsMixin):
 
 class EQGRaceDataset(Dataset,UtilsMixin):
     def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
-        self.file_path  = os.path.join(dataset_dir,split_set,level,level+'.jsonl')
+        self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
         # config
