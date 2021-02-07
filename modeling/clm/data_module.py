@@ -17,9 +17,9 @@ class DataModule(pl.LightningDataModule):
         if args.dataset == 'race':
             if stage == 'fit':
                 self.train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
-                self.test_dataset = RaceDataset('test','all',no_label=False)
+                self.test_dataset = RaceDataset('test','all',eval_input=False)
             elif stage == 'test':
-                self.test_dataset = RaceDataset('test','all',no_label=True)
+                self.test_dataset = RaceDataset('test','all',eval_input=True)
         elif args.dataset == 'eqg':
             if stage == 'fit':
                 self.train_dataset = ConcatDataset((
@@ -29,13 +29,13 @@ class DataModule(pl.LightningDataModule):
                     EQGRaceDataset('dev','high')
                     ))
                 self.test_dataset = ConcatDataset((
-                    EQGRaceDataset('test','middle',no_label=False),
-                    EQGRaceDataset('test','high',no_label=False)
+                    EQGRaceDataset('test','middle',eval_input=False),
+                    EQGRaceDataset('test','high',eval_input=False)
                     ))
             elif stage == 'test':
                 self.test_dataset = ConcatDataset((
-                    EQGRaceDataset('test','middle',no_label=True),
-                    EQGRaceDataset('test','high',no_label=True)
+                    EQGRaceDataset('test','middle',eval_input=True),
+                    EQGRaceDataset('test','high',eval_input=True)
                     ))
 
     def train_dataloader(self):
@@ -76,7 +76,8 @@ class UtilsMixin():
         # pad or limit to max length
         pad_ids = [self.pad_token_id]*self.max_length
         pad_mask = [0]*self.max_length
-        pad_labels = [self.pad_token_id]*self.max_length
+        # pad_labels = [self.pad_token_id]*self.max_length
+        pad_labels = [-100]*self.max_length
 
         model_input['input_ids'] = (model_input['input_ids'] + pad_ids)[:self.max_length] 
         model_input['attention_mask'] = (model_input['attention_mask'] + pad_mask)[:self.max_length] 
@@ -89,7 +90,7 @@ class UtilsMixin():
         return model_input
 
 class RaceDataset(Dataset,UtilsMixin):
-    def __init__(self,split_set,level,dataset_dir='datasets/RACE',no_label=False):
+    def __init__(self,split_set,level,dataset_dir='datasets/RACE',eval_input=False):
         super().__init__()
         assert split_set in ['dev','test','train']
         assert level in ['all','middle','high']
@@ -109,7 +110,7 @@ class RaceDataset(Dataset,UtilsMixin):
         self.pad_token_id = self.tokenizer.pad_token_id
         self.max_length = 1024
         self.max_context_length = 850
-        self.no_label = no_label    
+        self.eval_input = eval_input    
             
     def __getitem__(self,index):
         with open(self.all_file_paths[index],'r',encoding='utf-8') as f:
@@ -124,18 +125,18 @@ class RaceDataset(Dataset,UtilsMixin):
             questions.append(self.tokenizer.eos_token)
             label = self.sep_token.join(questions) 
 
-            if not self.no_label:
+            if not self.eval_input:
                 model_input = self._prepare_input(context + self.tokenizer.bos_token, label= label)
                 return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
             else:
                 model_input = self._prepare_input(context + self.tokenizer.bos_token, label= None)
-                return model_input['input_ids'],model_input['attention_mask']
+                return model_input['input_ids'],model_input['attention_mask'],data['questions']
             
     def __len__(self):
         return len(self.all_file_paths)
 
 class EQGRaceDataset(Dataset,UtilsMixin):
-    def __init__(self,split_set,level,dataset_dir='datasets/merge-race',no_label=False):
+    def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
         self.file_path  = os.path.join(dataset_dir,split_set,level,level+'.jsonl')
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
@@ -145,21 +146,21 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         self.pad_token_id = self.tokenizer.pad_token_id
         self.max_length = 1024
         self.max_context_length = 850
-        self.no_label = no_label
+        self.eval_input = eval_input
 
     def __getitem__(self,index):
         data = json.loads(self.data_lines[index])
         context = data['article']
-        questions = data['acticle_spec_questions']        
+        questions = data['acticle_spec_questions']
         questions.append(self.tokenizer.eos_token)
         label = self.sep_token.join(questions) 
 
-        if not self.no_label:
+        if not self.eval_input:
             model_input = self._prepare_input(context + self.tokenizer.bos_token, label= label)
             return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
         else:
             model_input = self._prepare_input(context + self.tokenizer.bos_token, label= None)
-            return model_input['input_ids'],model_input['attention_mask']
+            return model_input['input_ids'],model_input['attention_mask'],data['acticle_spec_questions']
     
     def __len__(self):
         return len(self.data_lines)

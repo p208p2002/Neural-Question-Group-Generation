@@ -29,6 +29,8 @@ class Model(pl.LightningModule):
     
     def test_step(self, batch, batch_idx):
         input_ids = batch[0]
+        attention_mask = batch[1]
+        label_questions = batch[-1]
         input_ids_len = input_ids.shape[-1]
         batch_size = input_ids.shape[0]
         assert batch_size == 1
@@ -36,6 +38,7 @@ class Model(pl.LightningModule):
         num_return_sequences = 1
         sample_outputs = self.model.generate(
             input_ids = input_ids,
+            attention_mask = attention_mask,
             max_length=1024,
             early_stopping=True,
             temperature=0.8,
@@ -53,7 +56,7 @@ class Model(pl.LightningModule):
         for i,sample_output in enumerate(sample_outputs):
             decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions).split(self.tokenizer.sep_token)
-        output =  {'batch_idx':batch_idx,'questions':decode_questions}
+        output =  {'batch_idx':batch_idx,'questions':decode_questions,'labels':[_q[0] for _q in label_questions]}
 
         # log
         log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
