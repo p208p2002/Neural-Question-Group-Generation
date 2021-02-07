@@ -1,6 +1,7 @@
 import json
 import os
 from torch.utils.data import Dataset
+import re
 
 class RaceDataset(Dataset):
     def __init__(self,split_set,level,dataset_dir='datasets/RACE',no_label=False):
@@ -23,7 +24,7 @@ class RaceDataset(Dataset):
             # keep only type is question
             questions = []
             for _q in _questions:
-                if _q[-1] == '?': 
+                if _q[-1] == '?' and re.search('_',_q) is None: 
                     questions.append(_q)
             
             data['questions'] = questions
@@ -45,33 +46,31 @@ if __name__ == "__main__":
     total = 0
 
     for split in splits:
-        with open(os.path.join('datasets/EQG-RACE',split+'.json'),'r',encoding='utf-8') as f:
-            eqg_race = json.load(f)
-            total += len(eqg_race)
-            for eqg_race_data in eqg_race: # dict_keys(['question', 'max_sent', 'tag', 'rouge', 'answer', 'sent'])
-                eqg_race_question = eqg_race_data['question'].lower().replace(" ","")[8:-1]
-                
-                race_datasets = []
-                for level in levels:
-                    race_dataset = RaceDataset(split,level)
-                    race_datasets.append(race_dataset)
+        merge_race_dir = os.path.join(output_dir,split)
+        os.makedirs(merge_race_dir,exist_ok=True)
+        eqg_race = open(os.path.join('datasets/EQG-RACE',split+'.json'),'r',encoding='utf-8')
+        eqg_race = json.load(eqg_race)
+        total += len(eqg_race)
+        for level in levels:
+            race_dataset = RaceDataset(split,level)
+            with open(os.path.join(merge_race_dir,level+'.jsonl'),'a') as merge_race_f:
+                for race_data in race_dataset:
+                    race_questions = race_data['questions']
+                    race_data['acticle_spec_questions'] = []
+                    
+                    for race_question in race_questions[:]:
+                        race_question_key = race_question.lower().replace(" ","")[8:-1]
 
-                for li,level in enumerate(levels):
-                    race_dataset = race_datasets[li]
-                    merge_race_dir = os.path.join(output_dir,split,level)
-                    os.makedirs(merge_race_dir,exist_ok=True)
+                        for eqg_i,eqg_race_data in enumerate(eqg_race): # dict_keys(['question', 'max_sent', 'tag', 'rouge', 'answer', 'sent'])
+                            eqg_race_question_key = eqg_race_data['question'].lower().replace(" ","")[8:-1]
 
-                    with open(os.path.join(merge_race_dir,level+'.jsonl'),'a') as merge_race_f:
-                        for race_data in race_dataset:
-                            race_questions = race_data['questions']
-                            race_data['acticle_spec_questions'] = []
-                            for race_question in race_questions:
-                                _race_question = race_question.lower().replace(" ","")[8:-1]
-                                if _race_question == eqg_race_question:
-                                    race_data['acticle_spec_questions'].append(race_question)
-                                    merge_race_f.write(json.dumps(race_data)+'\n')
-                                    match_count += 1
-                                step+=1
-                                if step%3000==0:
-                                    print('match_count(miss_match): %d/%d(%d)'%(match_count,total,total-match_count),'step:',str(step/1000)+'k',"{:<50}".format(merge_race_f.name),end='\r')
-    print('match_count(miss_match): %d/%d(%d)'%(match_count,total,total-match_count),'step:',str(step/1000)+'k',"{:<50}".format(merge_race_f.name),end='\n')
+                            if race_question_key == eqg_race_question_key:
+                                race_data['acticle_spec_questions'].append(race_question)
+                                merge_race_f.write(json.dumps(race_data)+'\n')
+                                eqg_race.remove(eqg_race_data)
+                                match_count += 1
+                            step+=1
+                            if step%5000==0:
+                                print('%3.2f'%(match_count/total*100),'match_count(miss_match): %d/%d(%d)'%(match_count,total,total-match_count),'step:',str(step/1000)+'k',"{:<50}".format(merge_race_f.name),end='\r')
+    print('%3.2f'%(match_count/total*100),'match_count(miss_match): %d/%d(%d)'%(match_count,total,total-match_count),'step:',str(step/1000)+'k',"{:<50}".format(merge_race_f.name),end='\n')
+            
