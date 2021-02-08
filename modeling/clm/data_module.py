@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader,Dataset,ConcatDataset
 import os
 import json
-from .tokenizer import get_tokenizer
+from .tokenizer import get_tokenizer,RACE_BOS
 from .argparser import get_args
 import torch
 import pytorch_lightning as pl
@@ -126,10 +126,10 @@ class RaceDataset(Dataset,UtilsMixin):
             label = self.sep_token.join(questions) 
 
             if not self.eval_input:
-                model_input = self.prepare_input(context + self.tokenizer.bos_token, label= label)
+                model_input = self.prepare_input(context + RACE_BOS, label= label)
                 return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
             else:
-                model_input = self.prepare_input(context + self.tokenizer.bos_token, label= None)
+                model_input = self.prepare_input(context + RACE_BOS, label= None)
                 return model_input['input_ids'],model_input['attention_mask'],questions[:-1],data['article']
             
     def __len__(self):
@@ -165,10 +165,10 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         label = self.sep_token.join(questions) 
 
         if not self.eval_input:
-            model_input = self.prepare_input(context + self.tokenizer.bos_token, label= label)
+            model_input = self.prepare_input(context + RACE_BOS, label= label)
             return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
         else:
-            model_input = self.prepare_input(context + self.tokenizer.bos_token, label= None)
+            model_input = self.prepare_input(context + RACE_BOS, label= None)
             return model_input['input_ids'],model_input['attention_mask'],data['acticle_spec_questions'],data['article']
     
     def __len__(self):

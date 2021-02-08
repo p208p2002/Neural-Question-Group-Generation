@@ -31,7 +31,7 @@ class Model(pl.LightningModule):
         #
         print("loading NLGEval...",end="\r")
         from nlgeval import NLGEval
-        self.nlgeval = NLGEval(no_glove=False,no_skipthoughts=True)  # loads the models
+        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True)  # loads the models
         print("loading NLGEval...finish")
 
         #
