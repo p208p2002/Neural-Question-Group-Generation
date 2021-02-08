@@ -27,6 +27,25 @@ class Model(pl.LightningModule):
         loss = outputs['loss']
         self.log('dev_loss',loss)
     
+    def on_test_epoch_start(self):
+        #
+        print("loading NLGEval...",end="\r")
+        from nlgeval import NLGEval
+        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True)  # loads the models
+        print("loading NLGEval...finish")
+
+        #
+        # print("loading BERTScorer...",end="\r")
+        # import logging,os
+        # import transformers
+        # os.environ["TOKENIZERS_PARALLELISM"] = 'true'
+        # transformers.tokenization_utils.logger.setLevel(logging.ERROR)
+        # transformers.configuration_utils.logger.setLevel(logging.ERROR)
+        # transformers.modeling_utils.logger.setLevel(logging.ERROR)
+        # from bert_score import BERTScorer
+        # self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
+        # print("loading BERTScorer...finish")
+    
     def test_step(self, batch, batch_idx):
         # tensor
         input_ids = batch[0]
@@ -62,13 +81,20 @@ class Model(pl.LightningModule):
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions).split(self.tokenizer.sep_token)
             if decode_questions[-1] == self.tokenizer.eos_token:
                 decode_questions.pop(-1)
-                
+        #   
         output =  {
             'batch_idx':batch_idx,
             'questions':decode_questions,
             'labels':[_q[0] for _q in label_questions],
             'article':article[0]
         }
+
+        # add score
+        output['question_scores'] = []
+        for question in output['questions']:
+            score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
+            for k in score.keys(): score[k] = str(score[k])
+            output['question_scores'].append(score)
 
         # log
         log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
