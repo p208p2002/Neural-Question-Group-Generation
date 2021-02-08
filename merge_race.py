@@ -65,12 +65,12 @@ if __name__ == "__main__":
                             eqg_race_question_key = eqg_race_data['question'].lower().replace(" ","")[8:-1]
 
                             if race_question_key == eqg_race_question_key:
-                                race_data['acticle_spec_questions'].append(race_question)
-                                merge_race_f.write(json.dumps(race_data)+'\n')
+                                race_data['acticle_spec_questions'].append(race_question)                                
                                 eqg_race.remove(eqg_race_data)
                                 match_count += 1
                             step+=1
                             if step%5000==0:
                                 print('%3.2f'%(match_count/total*100),'match_count(miss_match): %d/%d(%d)'%(match_count,total,total-match_count),'step:',str(step/1000)+'k',"{:<50}".format(merge_race_f.name),end='\r')
+                    merge_race_f.write(json.dumps(race_data)+'\n')
     print('%3.2f'%(match_count/total*100),'match_count(miss_match): %d/%d(%d)'%(match_count,total,total-match_count),'step:',str(step/1000)+'k',"{:<50}".format(merge_race_f.name),end='\n')
             

@@ -28,9 +28,13 @@ class Model(pl.LightningModule):
         self.log('dev_loss',loss)
     
     def test_step(self, batch, batch_idx):
+        # tensor
         input_ids = batch[0]
         attention_mask = batch[1]
-        label_questions = batch[-1]
+        # string
+        label_questions = batch[2]
+        article = batch[3]
+
         input_ids_len = input_ids.shape[-1]
         batch_size = input_ids.shape[0]
         assert batch_size == 1
@@ -59,7 +63,12 @@ class Model(pl.LightningModule):
             if decode_questions[-1] == self.tokenizer.eos_token:
                 decode_questions.pop(-1)
                 
-        output =  {'batch_idx':batch_idx,'questions':decode_questions,'labels':[_q[0] for _q in label_questions]}
+        output =  {
+            'batch_idx':batch_idx,
+            'questions':decode_questions,
+            'labels':[_q[0] for _q in label_questions],
+            'article':article[0]
+        }
 
         # log
         log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir

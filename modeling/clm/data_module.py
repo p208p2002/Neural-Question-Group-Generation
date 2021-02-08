@@ -6,37 +6,37 @@ from .argparser import get_args
 import torch
 import pytorch_lightning as pl
 import re
-args = get_args()
 
 class DataModule(pl.LightningDataModule):
-    def __init__(self):
+    def __init__(self,args = get_args()):
         super().__init__()
         self.batch_size = args.batch_size
+        self.args = args
         
     def setup(self, stage=None):
-        if args.dataset == 'race':
+        if self.args.dataset == 'race':
+            self.train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
             if stage == 'fit':
-                self.train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
                 self.test_dataset = RaceDataset('test','all',eval_input=False)
             elif stage == 'test':
                 self.test_dataset = RaceDataset('test','all',eval_input=True)
-        elif args.dataset == 'eqg':
-            if stage == 'fit':
-                self.train_dataset = ConcatDataset((
+        elif self.args.dataset == 'eqg':
+            self.train_dataset = ConcatDataset((
                     EQGRaceDataset('train','middle'),
                     EQGRaceDataset('train','high'),
                     EQGRaceDataset('dev','middle'),
                     EQGRaceDataset('dev','high')
-                    ))
+            ))
+            if stage == 'fit':
                 self.test_dataset = ConcatDataset((
                     EQGRaceDataset('test','middle',eval_input=False),
                     EQGRaceDataset('test','high',eval_input=False)
-                    ))
+                ))
             elif stage == 'test':
                 self.test_dataset = ConcatDataset((
                     EQGRaceDataset('test','middle',eval_input=True),
                     EQGRaceDataset('test','high',eval_input=True)
-                    ))
+                ))
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
@@ -48,7 +48,7 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
 
 class UtilsMixin():
-    def _prepare_input(self,context,label=None):
+    def prepare_input(self,context,label=None):
         tokenizer = self.tokenizer
 
         if label is None:
@@ -126,11 +126,11 @@ class RaceDataset(Dataset,UtilsMixin):
             label = self.sep_token.join(questions) 
 
             if not self.eval_input:
-                model_input = self._prepare_input(context + self.tokenizer.bos_token, label= label)
+                model_input = self.prepare_input(context + self.tokenizer.bos_token, label= label)
                 return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
             else:
-                model_input = self._prepare_input(context + self.tokenizer.bos_token, label= None)
-                return model_input['input_ids'],model_input['attention_mask'],questions[:-1]
+                model_input = self.prepare_input(context + self.tokenizer.bos_token, label= None)
+                return model_input['input_ids'],model_input['attention_mask'],questions[:-1],data['article']
             
     def __len__(self):
         return len(self.all_file_paths)
@@ -156,11 +156,11 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         label = self.sep_token.join(questions) 
 
         if not self.eval_input:
-            model_input = self._prepare_input(context + self.tokenizer.bos_token, label= label)
+            model_input = self.prepare_input(context + self.tokenizer.bos_token, label= label)
             return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
         else:
-            model_input = self._prepare_input(context + self.tokenizer.bos_token, label= None)
-            return model_input['input_ids'],model_input['attention_mask'],data['acticle_spec_questions']
+            model_input = self.prepare_input(context + self.tokenizer.bos_token, label= None)
+            return model_input['input_ids'],model_input['attention_mask'],data['acticle_spec_questions'],data['article']
     
     def __len__(self):
         return len(self.data_lines)

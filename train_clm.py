@@ -15,7 +15,6 @@ if __name__ == "__main__":
         precision=32,
         default_root_dir='.log_clm',
         max_epochs=args.epoch,
-        checkpoint_callback= not args.run_test,
         callbacks=[
             EarlyStopping(monitor='dev_loss',patience=2),
             ModelCheckpoint(monitor='dev_loss',filename='{epoch}-{dev_loss:.2f}',save_last=True),
@@ -32,4 +31,4 @@ if __name__ == "__main__":
 
     if args.run_test == False:
         trainer.fit(model,datamodule=dm)
-    trainer.test(datamodule=dm,ckpt_path=None if args.dev else 'best')
+    trainer.test(model if args.run_test else None,datamodule=dm,ckpt_path=None if args.dev else 'best')
