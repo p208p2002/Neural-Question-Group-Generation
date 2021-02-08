@@ -31,20 +31,20 @@ class Model(pl.LightningModule):
         #
         print("loading NLGEval...",end="\r")
         from nlgeval import NLGEval
-        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True)  # loads the models
+        self.nlgeval = NLGEval(no_glove=False,no_skipthoughts=True)  # loads the models
         print("loading NLGEval...finish")
 
         #
-        # print("loading BERTScorer...",end="\r")
-        # import logging,os
-        # import transformers
-        # os.environ["TOKENIZERS_PARALLELISM"] = 'true'
-        # transformers.tokenization_utils.logger.setLevel(logging.ERROR)
-        # transformers.configuration_utils.logger.setLevel(logging.ERROR)
-        # transformers.modeling_utils.logger.setLevel(logging.ERROR)
-        # from bert_score import BERTScorer
-        # self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
-        # print("loading BERTScorer...finish")
+        print("loading BERTScorer...",end="\r")
+        import logging,os
+        import transformers
+        os.environ["TOKENIZERS_PARALLELISM"] = 'true'
+        transformers.tokenization_utils.logger.setLevel(logging.ERROR)
+        transformers.configuration_utils.logger.setLevel(logging.ERROR)
+        transformers.modeling_utils.logger.setLevel(logging.ERROR)
+        from bert_score import BERTScorer
+        self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
+        print("loading BERTScorer...finish")
     
     def test_step(self, batch, batch_idx):
         # tensor
@@ -93,6 +93,9 @@ class Model(pl.LightningModule):
         output['question_scores'] = []
         for question in output['questions']:
             score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
+            del score['CIDEr']
+            bP, bR, bF1 = self.bert_scorer.score([question], [output['labels']])
+            score['BertScore'] = bF1.item()
             for k in score.keys(): score[k] = str(score[k])
             output['question_scores'].append(score)
 
