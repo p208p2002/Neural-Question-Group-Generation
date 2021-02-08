@@ -95,10 +95,10 @@ if __name__ == "__main__":
                 cos_s += "{:<10}".format(s_key[:8])
 
         # Predicts
-        print("{:<62}".format('Predicts:')+cos_s)
+        print("{:<64}".format('Predicts:')+cos_s)
 
         for q,s in zip(qs,question_scores):
-            f_q = "{:<60}".format(q[:60])
+            f_q = "{:<62}".format(q[:60].replace("\n",""))
             f_s = ""
             for s_key in s.keys():
                 f_s += "{:<10}".format(format_float(round(float(s[s_key])*100,5)))
