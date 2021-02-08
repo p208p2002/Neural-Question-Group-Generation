@@ -148,6 +148,15 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         self.max_context_length = 850
         self.eval_input = eval_input
 
+        # filter no question
+        new_data = []
+        for index in range(len(self.data_lines)):
+            data = json.loads(self.data_lines[index])
+            questions = data['acticle_spec_questions']
+            if len(questions) > 0:
+                new_data.append(self.data_lines[index])
+        self.data_lines = new_data
+
     def __getitem__(self,index):
         data = json.loads(self.data_lines[index])
         context = data['article']
