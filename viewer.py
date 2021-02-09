@@ -33,11 +33,10 @@ def print_global_info(predict_dataset):
     question_scores = predict_dataset[0]['question_scores']
     
     scores = {}
-    for question_score in question_scores:
-        cos_s = ''
-        for s_key in question_score.keys():
-            scores[s_key] = 0.0 # init dict
-            cos_s += "{:<10}".format(s_key[:8])
+    cos_s = ''
+    for s_key in question_scores[0].keys():
+        scores[s_key] = 0.0 # init dict
+        cos_s += "{:<10}".format(s_key[:8])
     print(cos_s)
 
     total_question_count = 0
@@ -73,8 +72,6 @@ if __name__ == "__main__":
     # predict
     predict_dataset = PredictDataset(args.log_file)
 
-    print_global_info(predict_dataset)
-
     #
     _shift_count = 0
     while True:
@@ -89,9 +86,9 @@ if __name__ == "__main__":
         question_scores = predict_dataset[current_index]['question_scores']
 
         # col name
-        for s in question_scores:
-            cos_s = ''
-            for s_key in s.keys():
+        cos_s = ''
+        if len(question_scores) > 0:
+            for s_key in question_scores[0].keys():
                 cos_s += "{:<10}".format(s_key[:8])
 
         # Predicts

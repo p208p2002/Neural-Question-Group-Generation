@@ -130,6 +130,16 @@ class UtilsMixin():
         
         return model_input
 
+    def construct_eval_output(self,dataset_name,input_ids,attention_mask,label_questions,article):
+        """
+        dataset_name: str
+        input_ids: tensor
+        attention_mask: tensor
+        label_questions: list[str]
+        article: str
+        """
+        return dataset_name,input_ids,attention_mask,label_questions,article
+
 class RaceDataset(Dataset,UtilsMixin):
     def __init__(self,split_set,level,dataset_dir='datasets/RACE',eval_input=False):
         super().__init__()
@@ -142,10 +152,9 @@ class RaceDataset(Dataset,UtilsMixin):
                     self.all_file_paths.append(os.path.join(root,f))
                 elif root == os.path.join(dataset_dir,split_set,level):
                     self.all_file_paths.append(os.path.join(root,f))
-        #
-        # print(split_set,level,dataset_dir,len(self))
-
+        
         # config
+        self.dataset_name = 'race'
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
@@ -172,7 +181,13 @@ class RaceDataset(Dataset,UtilsMixin):
                 return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
             else:
                 model_input = self.prepare_input(context + self.bos_token, label= None)
-                return model_input['input_ids'],model_input['attention_mask'],questions[:-1],data['article']
+                return self.construct_eval_output(
+                    self.dataset_name,
+                    model_input['input_ids'],
+                    model_input['attention_mask'],
+                    questions[:-1],
+                    data['article']
+                )
             
     def __len__(self):
         return len(self.all_file_paths)
@@ -183,6 +198,7 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
         # config
+        self.dataset_name = 'eqg'
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
@@ -212,7 +228,13 @@ class EQGRaceDataset(Dataset,UtilsMixin):
             return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
         else:
             model_input = self.prepare_input(context + self.bos_token, label= None)
-            return model_input['input_ids'],model_input['attention_mask'],data['acticle_spec_questions'],data['article']
+            return self.construct_eval_output(
+                self.dataset_name,
+                model_input['input_ids'],
+                model_input['attention_mask'],
+                data['acticle_spec_questions'],
+                data['article']
+            )
     
     def __len__(self):
         return len(self.data_lines)
@@ -223,6 +245,7 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
         # config
+        self.dataset_name = 'g_race'
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
@@ -231,18 +254,26 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
         self.eval_input = eval_input
         self.bos_token = _GENERAL_LEVEL
 
-    def __getitem__(self,index):
-        data = json.loads(self.data_lines[index])
-        context = data['article']
-        acticle_spec_questions = data['acticle_spec_questions'][:]
-        all_questions = data['questions'][:]
-
         # keep only general question
-        general_questions = []
-        for all_question in all_questions:
-            if all_question not in acticle_spec_questions:
-                general_questions.append(all_question)
-        data['general_questions'] = general_questions[:]
+        new_datas = []
+        for data_line in self.data_lines:
+            data = json.loads(data_line)
+            acticle_spec_questions = data['acticle_spec_questions'][:]
+            all_questions = data['questions'][:]
+
+            general_questions = []
+            for all_question in all_questions:
+                if all_question not in acticle_spec_questions:
+                    general_questions.append(all_question)
+            if len(general_questions) >0: # remove no question
+                data['general_questions'] = general_questions
+                new_datas.append(data)
+        self.datas = new_datas
+
+    def __getitem__(self,index):
+        data = self.datas[index]
+        context = data['article']
+        general_questions = data['general_questions'][:]
 
         #
         general_questions.append(self.tokenizer.eos_token)
@@ -253,8 +284,14 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
             return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
         else:
             model_input = self.prepare_input(context + self.bos_token, label= None)
-            return model_input['input_ids'],model_input['attention_mask'],data['general_questions'],data['article']
+            return self.construct_eval_output(
+                self.dataset_name,
+                model_input['input_ids'],
+                model_input['attention_mask'],
+                data['general_questions'],
+                data['article']
+            )
     
     def __len__(self):
-        return len(self.data_lines)
+        return len(self.datas)
 

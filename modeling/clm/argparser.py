@@ -13,6 +13,7 @@ def get_args():
     args = parser.parse_args()
 
     allow_datasets = ['race','g_race','eqg']
+    assert len(args.datasets)>0,'no datasets spec'
     for dataset in args.datasets:
         assert dataset in allow_datasets,'not allow dataset: `%s`'%dataset
         

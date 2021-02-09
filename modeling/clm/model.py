@@ -48,11 +48,12 @@ class Model(pl.LightningModule):
     
     def test_step(self, batch, batch_idx):
         # tensor
-        input_ids = batch[0]
-        attention_mask = batch[1]
+        dataset_name = batch[0][0]
+        input_ids = batch[1]
+        attention_mask = batch[2]
         # string
-        label_questions = batch[2]
-        article = batch[3]
+        label_questions = batch[3]
+        article = batch[4]
 
         input_ids_len = input_ids.shape[-1]
         batch_size = input_ids.shape[0]
@@ -84,6 +85,7 @@ class Model(pl.LightningModule):
         #   
         output =  {
             'batch_idx':batch_idx,
+            'dataset_name':dataset_name,
             'questions':decode_questions,
             'labels':[_q[0] for _q in label_questions],
             'article':article[0]
