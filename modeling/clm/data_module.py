@@ -12,54 +12,73 @@ class DataModule(pl.LightningDataModule):
         super().__init__()
         self.batch_size = args.batch_size
         self.args = args
-        
-    def setup(self, stage=None):
-        # set race dataset
-        if self.args.dataset == 'race':
-            self.train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
+    
+    def get_dataset(self,stage,d_name):
+         # set race dataset
+        if d_name == 'race':
+            train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
             if stage == 'fit':
-                self.test_dataset = RaceDataset('test','all',eval_input=False)
+                test_dataset = RaceDataset('test','all',eval_input=False)
             elif stage == 'test':
-                self.test_dataset = RaceDataset('test','all',eval_input=True)
+                test_dataset = RaceDataset('test','all',eval_input=True)
         
         # set eqg dataset
-        elif self.args.dataset == 'eqg':
-            self.train_dataset = ConcatDataset((
+        elif d_name == 'eqg':
+            train_dataset = ConcatDataset((
                     EQGRaceDataset('train','middle'),
                     EQGRaceDataset('train','high'),
                     EQGRaceDataset('dev','middle'),
                     EQGRaceDataset('dev','high')
             ))
             if stage == 'fit':
-                self.test_dataset = ConcatDataset((
+                test_dataset = ConcatDataset((
                     EQGRaceDataset('test','middle',eval_input=False),
                     EQGRaceDataset('test','high',eval_input=False)
                 ))
             elif stage == 'test':
-                self.test_dataset = ConcatDataset((
+                test_dataset = ConcatDataset((
                     EQGRaceDataset('test','middle',eval_input=True),
                     EQGRaceDataset('test','high',eval_input=True)
                 ))
         
         # set general race
-        elif self.args.dataset == 'g_race':
-            self.train_dataset = ConcatDataset((
+        elif d_name == 'g_race':
+            train_dataset = ConcatDataset((
                     GeneralRaceDataset('train','middle'),
                     GeneralRaceDataset('train','high'),
                     GeneralRaceDataset('dev','middle'),
                     GeneralRaceDataset('dev','high')
             ))
             if stage == 'fit':
-                self.test_dataset = ConcatDataset((
+                test_dataset = ConcatDataset((
                     GeneralRaceDataset('test','middle',eval_input=False),
                     GeneralRaceDataset('test','high',eval_input=False)
                 ))
             elif stage == 'test':
-                self.test_dataset = ConcatDataset((
+                test_dataset = ConcatDataset((
                     GeneralRaceDataset('test','middle',eval_input=True),
                     GeneralRaceDataset('test','high',eval_input=True)
                 ))
-
+        
+        # match fail
+        else:
+            assert False,'no dataset match'
+        
+        return train_dataset,test_dataset
+        
+    def setup(self, stage=None):
+        train_datasets,test_datasets = [],[]
+        print('stage:',stage,', using datasets:',self.args.datasets)
+        for d_name in self.args.datasets:
+            print('loading `%s`...'%d_name,end='\r')
+            train_dataset,test_dataset = self.get_dataset(stage=stage,d_name=d_name)
+            train_datasets.append(train_dataset)
+            test_datasets.append(test_dataset)
+            print('loading `%s`...finish'%d_name)
+        
+        self.train_dataset = ConcatDataset(train_datasets)
+        self.test_dataset = ConcatDataset(test_datasets)
+       
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
@@ -124,7 +143,7 @@ class RaceDataset(Dataset,UtilsMixin):
                 elif root == os.path.join(dataset_dir,split_set,level):
                     self.all_file_paths.append(os.path.join(root,f))
         #
-        print(split_set,level,dataset_dir,len(self))
+        # print(split_set,level,dataset_dir,len(self))
 
         # config
         self.tokenizer = get_tokenizer()
