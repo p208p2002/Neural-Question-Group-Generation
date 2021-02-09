@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # config
     args = get_args()
     context = ''
-    max_display = 600
+    max_display = 800
     shift_step = 100
     current_index = 0
 
