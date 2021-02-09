@@ -9,6 +9,6 @@ def get_args():
     parser.add_argument('--dev',type=int,default=0)
     parser.add_argument('--run_test',action='store_true')
     parser.add_argument('-fc','--from_checkpoint',type=str,default=None)
-    parser.add_argument('-d','--dataset',choices=['race','eqg'],required=True)
+    parser.add_argument('-d','--dataset',choices=['race','g_race','eqg',],required=True)
     args = parser.parse_args()
     return args
