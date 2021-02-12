@@ -169,7 +169,7 @@ class RaceDataset(Dataset,UtilsMixin):
                     self.all_file_paths.append(os.path.join(root,f))
 
         #
-        UtilsMixin.set_config(self,dataset_name='race',eval_input=eval_input, bos_token=RACE_BOS)
+        self.set_config(dataset_name='race',eval_input=eval_input, bos_token=RACE_BOS)
             
     def __getitem__(self,index):
         with open(self.all_file_paths[index],'r',encoding='utf-8') as f:
@@ -206,7 +206,7 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
         # config
-        UtilsMixin.set_config(self,dataset_name='eqg',eval_input=eval_input,bos_token=RACE_BOS)
+        self.set_config(dataset_name='eqg',eval_input=eval_input,bos_token=RACE_BOS)
 
         # filter no question
         new_data = []
@@ -246,7 +246,7 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
         # config
-        UtilsMixin.set_config(self,dataset_name='g_race',eval_input=eval_input,bos_token=_GENERAL_LEVEL)        
+        self.set_config(dataset_name='g_race',eval_input=eval_input,bos_token=_GENERAL_LEVEL)        
 
         # keep only general question
         new_datas = []
