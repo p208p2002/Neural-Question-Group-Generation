@@ -6,6 +6,7 @@ from .argparser import get_args
 import torch
 import pytorch_lightning as pl
 import re
+from .config import *
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -89,6 +90,20 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
 
 class UtilsMixin():
+    def set_config(self,dataset_name, eval_input, bos_token, max_length=MAX_LENGTH ,max_context_length=MAX_CONTEXT_LENGTH ):
+        # general config
+        self.tokenizer = get_tokenizer()
+        self.sep_token = self.tokenizer.sep_token
+        self.pad_token_id = self.tokenizer.pad_token_id
+
+        self.max_length = max_length
+        self.max_context_length = max_context_length
+
+        # spec config
+        self.dataset_name = dataset_name
+        self.eval_input = eval_input  
+        self.bos_token = bos_token
+        
     def prepare_input(self,context,label=None):
         tokenizer = self.tokenizer
 
@@ -152,16 +167,9 @@ class RaceDataset(Dataset,UtilsMixin):
                     self.all_file_paths.append(os.path.join(root,f))
                 elif root == os.path.join(dataset_dir,split_set,level):
                     self.all_file_paths.append(os.path.join(root,f))
-        
-        # config
-        self.dataset_name = 'race'
-        self.tokenizer = get_tokenizer()
-        self.sep_token = self.tokenizer.sep_token
-        self.pad_token_id = self.tokenizer.pad_token_id
-        self.max_length = 1024
-        self.max_context_length = 850
-        self.eval_input = eval_input  
-        self.bos_token = RACE_BOS
+
+        #
+        UtilsMixin.set_config(self,dataset_name='race',eval_input=eval_input, bos_token=RACE_BOS)
             
     def __getitem__(self,index):
         with open(self.all_file_paths[index],'r',encoding='utf-8') as f:
@@ -198,14 +206,7 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
         # config
-        self.dataset_name = 'eqg'
-        self.tokenizer = get_tokenizer()
-        self.sep_token = self.tokenizer.sep_token
-        self.pad_token_id = self.tokenizer.pad_token_id
-        self.max_length = 1024
-        self.max_context_length = 850
-        self.eval_input = eval_input
-        self.bos_token = RACE_BOS
+        UtilsMixin.set_config(self,dataset_name='eqg',eval_input=eval_input,bos_token=RACE_BOS)
 
         # filter no question
         new_data = []
@@ -245,14 +246,7 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
         # config
-        self.dataset_name = 'g_race'
-        self.tokenizer = get_tokenizer()
-        self.sep_token = self.tokenizer.sep_token
-        self.pad_token_id = self.tokenizer.pad_token_id
-        self.max_length = 1024
-        self.max_context_length = 850
-        self.eval_input = eval_input
-        self.bos_token = _GENERAL_LEVEL
+        UtilsMixin.set_config(self,dataset_name='g_race',eval_input=eval_input,bos_token=_GENERAL_LEVEL)        
 
         # keep only general question
         new_datas = []

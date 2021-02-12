@@ -6,6 +6,7 @@ import torch
 import re
 import os
 import json
+from .config import *
 args = get_args()
 
 class Model(pl.LightningModule):
@@ -63,7 +64,7 @@ class Model(pl.LightningModule):
         sample_outputs = self.model.generate(
             input_ids = input_ids,
             attention_mask = attention_mask,
-            max_length=1024,
+            max_length=MAX_LENGTH,
             early_stopping=True,
             temperature=0.8,
             do_sample=True,
