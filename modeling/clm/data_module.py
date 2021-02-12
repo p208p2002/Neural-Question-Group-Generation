@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader,Dataset,ConcatDataset
 import os
 import json
-from .tokenizer import get_tokenizer,RACE_BOS,_GENERAL_LEVEL
+from .tokenizer import get_tokenizer,RACE_BOS,_GENERAL_LEVEL,_MIDDLE_LEVEL
 from .argparser import get_args
 import torch
 import pytorch_lightning as pl
@@ -59,6 +59,24 @@ class DataModule(pl.LightningDataModule):
                 test_dataset = ConcatDataset((
                     GeneralRaceDataset('test','middle',eval_input=True),
                     GeneralRaceDataset('test','high',eval_input=True)
+                ))
+        
+        elif d_name == 'm_race':
+            train_dataset = ConcatDataset((
+                    MergeRaceDataset('train','middle'),
+                    MergeRaceDataset('train','high'),
+                    MergeRaceDataset('dev','middle'),
+                    MergeRaceDataset('dev','high')
+            ))
+            if stage == 'fit':
+                test_dataset = ConcatDataset((
+                    MergeRaceDataset('test','middle',eval_input=False),
+                    MergeRaceDataset('test','high',eval_input=False)
+                ))
+            elif stage == 'test':
+                test_dataset = ConcatDataset((
+                    MergeRaceDataset('test','middle',eval_input=True),
+                    MergeRaceDataset('test','high',eval_input=True)
                 ))
         
         # match fail
@@ -212,7 +230,7 @@ class EQGRaceDataset(Dataset,UtilsMixin):
         new_data = []
         for index in range(len(self.data_lines)):
             data = json.loads(self.data_lines[index])
-            questions = data['acticle_spec_questions']
+            questions = data['article_spec_questions']
             if len(questions) > 0:
                 new_data.append(self.data_lines[index])
         self.data_lines = new_data
@@ -220,7 +238,7 @@ class EQGRaceDataset(Dataset,UtilsMixin):
     def __getitem__(self,index):
         data = json.loads(self.data_lines[index])
         context = data['article']
-        questions = data['acticle_spec_questions'][:]
+        questions = data['article_spec_questions'][:]
         questions.append(self.tokenizer.eos_token)
         label = self.sep_token.join(questions) 
 
@@ -233,7 +251,7 @@ class EQGRaceDataset(Dataset,UtilsMixin):
                 self.dataset_name,
                 model_input['input_ids'],
                 model_input['attention_mask'],
-                data['acticle_spec_questions'],
+                data['article_spec_questions'],
                 data['article']
             )
     
@@ -252,12 +270,12 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
         new_datas = []
         for data_line in self.data_lines:
             data = json.loads(data_line)
-            acticle_spec_questions = data['acticle_spec_questions'][:]
+            article_spec_questions = data['article_spec_questions'][:]
             all_questions = data['questions'][:]
 
             general_questions = []
             for all_question in all_questions:
-                if all_question not in acticle_spec_questions:
+                if all_question not in article_spec_questions:
                     general_questions.append(all_question)
             if len(general_questions) >0: # remove no question
                 data['general_questions'] = general_questions
@@ -289,3 +307,59 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
     def __len__(self):
         return len(self.datas)
 
+class MergeRaceDataset(Dataset,UtilsMixin):
+    def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
+        self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
+        self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
+
+        # config
+        self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
+        self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
+
+        # keep only general question
+        new_datas = []
+        for data_line in self.data_lines:
+            data = json.loads(data_line)
+            article_spec_questions = data['article_spec_questions'][:]
+            all_questions = data['questions'][:]
+
+            general_questions = []
+            for all_question in all_questions:
+                if all_question not in article_spec_questions:
+                    general_questions.append(all_question)
+            if len(general_questions) >0: # remove no question
+                data['general_questions'] = general_questions
+                new_datas.append(data)
+        self.datas = new_datas
+
+    def __getitem__(self,index):
+        data = self.datas[index]
+        context = data['article']
+
+        general_questions = data['general_questions'][:]
+        general_questions =  self.bos_tokens[0] + self.bos_tokens[0].join(general_questions)
+
+        article_spec_questions = data['article_spec_questions'][:]
+        article_spec_questions = self.bos_tokens[1] + self.bos_tokens[1].join(article_spec_questions)
+        
+
+        label = general_questions + article_spec_questions + self.tokenizer.eos_token
+
+        #        
+        label = self.sep_token.join(general_questions) 
+
+        if not self.eval_input:
+            model_input = self.prepare_input(context + self.tokenizer.sep_token, label= label)
+            return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
+        else:
+            model_input = self.prepare_input(context  + self.tokenizer.sep_token, label= None)
+            return self.construct_eval_output(
+                self.dataset_name,
+                model_input['input_ids'],
+                model_input['attention_mask'],
+                data['general_questions'] + data['article_spec_questions'],
+                data['article']
+            )
+    
+    def __len__(self):
+        return len(self.datas)

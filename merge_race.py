@@ -56,7 +56,7 @@ if __name__ == "__main__":
             with open(os.path.join(merge_race_dir,level+'.jsonl'),'a') as merge_race_f:
                 for race_data in race_dataset:
                     race_questions = race_data['questions']
-                    race_data['acticle_spec_questions'] = []
+                    race_data['article_spec_questions'] = []
                     
                     for race_question in race_questions[:]:
                         race_question_key = race_question.lower().replace(" ","")[8:-1]
@@ -65,7 +65,7 @@ if __name__ == "__main__":
                             eqg_race_question_key = eqg_race_data['question'].lower().replace(" ","")[8:-1]
 
                             if race_question_key == eqg_race_question_key:
-                                race_data['acticle_spec_questions'].append(race_question)                                
+                                race_data['article_spec_questions'].append(race_question)                                
                                 eqg_race.remove(eqg_race_data)
                                 match_count += 1
                             step+=1

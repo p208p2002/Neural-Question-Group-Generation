@@ -12,7 +12,7 @@ def get_args():
     parser.add_argument('-ds','--datasets',nargs='+',required=True)
     args = parser.parse_args()
 
-    allow_datasets = ['race','g_race','eqg']
+    allow_datasets = ['race','g_race','eqg','m_race']
     assert len(args.datasets)>0,'no datasets spec'
     for dataset in args.datasets:
         assert dataset in allow_datasets,'not allow dataset: `%s`'%dataset
