@@ -16,5 +16,7 @@ def get_args():
     assert len(args.datasets)>0,'no datasets spec'
     for dataset in args.datasets:
         assert dataset in allow_datasets,'not allow dataset: `%s`'%dataset
+    
+    if 'm_race' in args.datasets: assert len(args.datasets) == 1,'m_race can use only alone'
         
     return args

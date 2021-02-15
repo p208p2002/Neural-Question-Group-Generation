@@ -7,6 +7,7 @@ import torch
 import pytorch_lightning as pl
 import re
 from .config import *
+import random
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -316,20 +317,20 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
         self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
 
-        # keep only general question
+        # select general question
         new_datas = []
         for data_line in self.data_lines:
             data = json.loads(data_line)
             article_spec_questions = data['article_spec_questions'][:]
             all_questions = data['questions'][:]
+            if len(all_questions) == 0: continue
 
             general_questions = []
             for all_question in all_questions:
                 if all_question not in article_spec_questions:
-                    general_questions.append(all_question)
-            if len(general_questions) >0: # remove no question
-                data['general_questions'] = general_questions
-                new_datas.append(data)
+                    general_questions.append(all_question)            
+            data['general_questions'] = general_questions
+            new_datas.append(data)
         self.datas = new_datas
 
     def __getitem__(self,index):
@@ -337,16 +338,16 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         context = data['article']
 
         general_questions = data['general_questions'][:]
-        general_questions =  self.bos_tokens[0] + self.bos_tokens[0].join(general_questions)
+        general_questions = [self.bos_tokens[0]+ q for q in general_questions]
+        # general_questions =  self.bos_tokens[0] + self.bos_tokens[0].join(general_questions)
 
         article_spec_questions = data['article_spec_questions'][:]
-        article_spec_questions = self.bos_tokens[1] + self.bos_tokens[1].join(article_spec_questions)
+        article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
+
+        all_questions_with_bos = general_questions + article_spec_questions
+        random.shuffle(all_questions_with_bos)
         
-
-        label = general_questions + article_spec_questions + self.tokenizer.eos_token
-
-        #        
-        label = self.sep_token.join(general_questions) 
+        label = ''.join(all_questions_with_bos)
 
         if not self.eval_input:
             model_input = self.prepare_input(context + self.tokenizer.sep_token, label= label)

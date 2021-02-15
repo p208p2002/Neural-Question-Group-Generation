@@ -1,10 +1,10 @@
 from transformers import AutoTokenizer
 from .argparser import get_args
 
-_GENERAL_LEVEL = '[GENERAL]'
-_EASY_LEVEL = '[SHALLOW]'
-_MIDDLE_LEVEL = '[MEDIUM]'
-_HIGH_LEVEL = '[DEEP]'
+_GENERAL_LEVEL = '_$[GENERAL]'
+_EASY_LEVEL = '_$[SHALLOW]'
+_MIDDLE_LEVEL = '_$[MEDIUM]'
+_HIGH_LEVEL = '_$[DEEP]'
 
 RACE_BOS = _MIDDLE_LEVEL
 

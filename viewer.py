@@ -105,6 +105,11 @@ if __name__ == "__main__":
     # predict
     predict_dataset = PredictDataset(args.log_file)
 
+    # check is m_race or not
+    is_m_race = False
+    if predict_dataset[0].get('levels',None) is not None:
+        is_m_race = True
+
     #
     _shift_count = 0
     while True:
@@ -129,12 +134,21 @@ if __name__ == "__main__":
         # Predicts
         print("{:<64}".format('Predicts:')+cos_s)
 
-        for q,s in zip(qs,question_scores):
-            f_q = "{:<62}".format(q[:60].replace("\n",""))
-            f_s = ""
-            for score_key in s.keys():
-                f_s += "{:<10}".format(format_float(round(float(s[score_key])*100,5)))
-            predict_questions_and_scores.append(f_q+f_s)
+        if is_m_race:
+            levels = predict_dataset[current_index]['levels']
+            for q,s,l in zip(qs,question_scores,levels):
+                f_q = "{:<62}".format((l + q)[:60].replace("\n",""))
+                f_s = ""
+                for score_key in s.keys():
+                    f_s += "{:<10}".format(format_float(round(float(s[score_key])*100,5)))
+                predict_questions_and_scores.append(f_q+f_s)        
+        else:
+            for q,s in zip(qs,question_scores):
+                f_q = "{:<62}".format(q[:60].replace("\n",""))
+                f_s = ""
+                for score_key in s.keys():
+                    f_s += "{:<10}".format(format_float(round(float(s[score_key])*100,5)))
+                predict_questions_and_scores.append(f_q+f_s)
 
         print('- '+'\n- '.join(predict_questions_and_scores),end='\n\n')
 

@@ -9,6 +9,23 @@ import json
 from .config import *
 args = get_args()
 
+def _parse_question(question):
+    """
+    Args:
+        question: str
+    Return:
+        level,question
+    """
+    level = None
+    try:
+        level = re.match("\\[.*\\]",question).group()
+    except:
+        pass
+    
+    if level is not None:
+        question = question.replace(level,"")
+    return level,question
+
 class Model(pl.LightningModule):
     def __init__(self):
         super().__init__()
@@ -76,14 +93,29 @@ class Model(pl.LightningModule):
             pad_token_id=self.tokenizer.pad_token_id
         )
 
-        assert len(sample_outputs) == num_return_sequences
+        assert len(sample_outputs) == num_return_sequences # 1
+        sample_output = sample_outputs[0]        
         
-        for i,sample_output in enumerate(sample_outputs):
-            decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
-            decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions).split(self.tokenizer.sep_token)
-            if decode_questions[-1] == self.tokenizer.eos_token:
-                decode_questions.pop(-1)
-        #   
+        decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
+        decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
+        
+        if 'm_race' in args.datasets:
+            decode_questions = decode_questions.split('_$')            
+            new_decode_questions = []
+            levels = []
+            for decode_question in decode_questions:
+                level,question = _parse_question(decode_question)
+                new_decode_questions.append(question)
+                levels.append(level)
+            decode_questions = new_decode_questions
+        else:
+            decode_questions = decode_questions.split(self.tokenizer.sep_token)
+
+        if decode_questions[-1] == self.tokenizer.eos_token:
+            decode_questions.pop(-1)
+        
+        if decode_questions[0] == '':decode_questions.pop(0)
+
         output =  {
             'batch_idx':batch_idx,
             'dataset_name':dataset_name,
@@ -91,6 +123,9 @@ class Model(pl.LightningModule):
             'labels':[_q[0] for _q in label_questions],
             'article':article[0]
         }
+        
+        if 'm_race' in args.datasets:            
+            output['levels'] = levels[1:]
 
         # add score
         output['question_scores'] = []
