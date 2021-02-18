@@ -28,7 +28,7 @@ class PredictDataset(Dataset):
     def __len__(self):
         return len(self.data_lines)
 
-def print_global_info(predict_dataset):
+def print_global_info(predict_dataset,use_like_score):
     # print col name
     print (u"{}[2J{}[;H".format(chr(27), chr(27)))
 
@@ -48,7 +48,10 @@ def print_global_info(predict_dataset):
     col_names = set()
     while True:
         try:
-            question_scores = predict_dataset[_qi]['question_scores']
+            if use_like_score:
+                question_scores = predict_dataset[_qi]['question_scores']
+            else:
+                question_scores = predict_dataset[_qi]['unlike_question_scores']
             foramt_col_names = ''
             for score_key in question_scores[0].keys():
                 foramt_col_names += "{:<10}".format(score_key[:8])
@@ -68,7 +71,10 @@ def print_global_info(predict_dataset):
     # total_question_count = 0
     for i in range(len(predict_dataset)):
         data = predict_dataset[i]
-        question_scores = data['question_scores']
+        if use_like_score:
+            question_scores = data['question_scores']
+        else:
+            question_scores = data['unlike_question_scores']
         dataset_name = data['dataset_name']
         for question_score in question_scores:
             # total_question_count+=1
@@ -193,10 +199,15 @@ if __name__ == "__main__":
             print("up:(w) ,down:(s), next:(a), prev:(d), goto:(i), random:(r), overview:(o), exit:(q)")
             time.sleep(3)
         elif key == 'o':
-            print_global_info(predict_dataset)
+            print_global_info(predict_dataset,use_like_score)
             while True:
-                if getkey() in ['q','o']:
+                key = getkey()
+                if key in ['q','o']:
                     break
+                elif key == 'u':
+                    use_like_score = not use_like_score
+                    print_global_info(predict_dataset,use_like_score)
+                
 
         if _shift_count <0:_shift_count=0
         if current_index <0: current_index=len(predict_dataset)-1
