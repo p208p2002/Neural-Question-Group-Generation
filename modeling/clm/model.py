@@ -130,7 +130,9 @@ class Model(pl.LightningModule):
 
         # add score
         output['question_scores'] = []
+        output['unlike_question_scores'] = []
         for question in output['questions']:
+            # like score
             score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
             del score['CIDEr']
             bP, bR, bF1 = self.bert_scorer.score([question], [output['labels']])
@@ -138,12 +140,37 @@ class Model(pl.LightningModule):
             for k in score.keys(): score[k] = str(score[k])
             output['question_scores'].append(score)
 
+            # unlike score
+            _questions = output['questions'][:]
+            _questions.remove(question)
+            if len(_questions) == 0: _questions.append("@")
+            score = self.nlgeval.compute_individual_metrics(hyp=question, ref=_questions)
+            del score['CIDEr']
+            bP, bR, bF1 = self.bert_scorer.score([question], [_questions])
+            score['BertScore'] = bF1.item()
+            for k in score.keys(): score[k] = str(score[k])
+            output['unlike_question_scores'].append(score)
+
         # log
         log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
         os.makedirs(log_dir,exist_ok=True)
         with open(os.path.join(log_dir,'predict.jsonl'),'a',encoding='utf-8') as log_f:
             output_str = json.dumps(output,ensure_ascii=False) + '\n'
             log_f.write(output_str)
+    
+    # def test_epoch_end(self,outputs):
+    #     log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
+    #     with open(os.path.join(log_dir,'predict.jsonl'),'r',encoding='utf-8') as log_f, open(os.path.join(log_dir,'predict2.jsonl'),'a',encoding='utf-8') as log_f2:
+    #         data_lines = log_f.readlines()
+    #         for data_line in data_lines:
+    #             output = json.loads(data_line)
+    #             for question in output['questions']:
+    #                 score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
+    #                 del score['CIDEr']
+    #                 bP, bR, bF1 = self.bert_scorer.score([question], [output['labels']])
+    #                 score['BertScore'] = bF1.item()
+    #                 for k in score.keys(): score[k] = str(score[k])
+    #                 output['question_scores'].append(score)
                 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)

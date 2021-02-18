@@ -109,6 +109,9 @@ if __name__ == "__main__":
     is_m_race = False
     if predict_dataset[0].get('levels',None) is not None:
         is_m_race = True
+    
+    # use like score or unlike score
+    use_like_score = True
 
     #
     _shift_count = 0
@@ -118,12 +121,16 @@ if __name__ == "__main__":
         
         print (u"{}[2J{}[;H".format(chr(27), chr(27)))
         print("index:",current_index,"context:",len(context),"shift:",_shift_count,"(h)elp")
-        print(dataset_name,end='\n\n')
+        print('dataset_name:',dataset_name,'(u)se_like_score:',use_like_score,end='\n\n')
     
         # Predicts
         predict_questions_and_scores = []
         qs = predict_dataset[current_index]['questions']
-        question_scores = predict_dataset[current_index]['question_scores']
+
+        if use_like_score:
+            question_scores = predict_dataset[current_index]['question_scores']
+        else:
+            question_scores = predict_dataset[current_index]['unlike_question_scores']
 
         # col name
         cos_s = ''
@@ -164,6 +171,8 @@ if __name__ == "__main__":
         
         if key == 'w':
             _shift_count -= shift_step
+        elif key == 'u':
+            use_like_score = not use_like_score
         elif key == 's':
             _shift_count += shift_step
         elif key == 'a':
