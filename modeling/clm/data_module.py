@@ -318,26 +318,33 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
 
         # select general question
+        self.all_general_questions = []
         new_datas = []
         for data_line in self.data_lines:
             data = json.loads(data_line)
             article_spec_questions = data['article_spec_questions'][:]
+            if len(article_spec_questions) == 0: continue; # keep only s-type >0
             all_questions = data['questions'][:]
-            if len(all_questions) == 0: continue
-
+            # if len(all_questions) == 0: continue
             general_questions = []
             for all_question in all_questions:
                 if all_question not in article_spec_questions:
                     general_questions.append(all_question)            
             data['general_questions'] = general_questions
+            self.all_general_questions+=general_questions
             new_datas.append(data)
         self.datas = new_datas
+    
+    def random_general_question(self):
+        return self.all_general_questions[random.randint(0,len(self.all_general_questions)-1)]
 
     def __getitem__(self,index):
         data = self.datas[index]
         context = data['article']
 
         general_questions = data['general_questions'][:]
+        if len(general_questions) == 0:
+            general_questions.append(self.random_general_question())
         general_questions = [self.bos_tokens[0]+ q for q in general_questions]
         # general_questions =  self.bos_tokens[0] + self.bos_tokens[0].join(general_questions)
 
@@ -349,6 +356,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         all_questions_with_bos.append(self.tokenizer.eos_token)
         
         label = ''.join(all_questions_with_bos)
+
+        # print('s_type:',len(article_spec_questions),'g_tpye:',len(general_questions),self.random_general_question())
 
         if not self.eval_input:
             model_input = self.prepare_input(context + self.tokenizer.sep_token, label= label)
