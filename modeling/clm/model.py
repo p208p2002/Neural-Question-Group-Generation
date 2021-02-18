@@ -98,6 +98,7 @@ class Model(pl.LightningModule):
         
         decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
         decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
+        decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
         
         if 'm_race' in args.datasets:
             decode_questions = decode_questions.split('_$')            
@@ -114,7 +115,7 @@ class Model(pl.LightningModule):
         if decode_questions[-1] == self.tokenizer.eos_token:
             decode_questions.pop(-1)
         
-        if decode_questions[0] == '':decode_questions.pop(0)
+        if len(decode_questions) >0 and decode_questions[0] == '':decode_questions.pop(0)
 
         output =  {
             'batch_idx':batch_idx,

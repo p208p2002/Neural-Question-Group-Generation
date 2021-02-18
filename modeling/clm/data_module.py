@@ -344,9 +344,9 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         article_spec_questions = data['article_spec_questions'][:]
         article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
 
-        all_questions_with_bos = general_questions + article_spec_questions
-        all_questions_with_bos.append(self.tokenizer.eos_token)
+        all_questions_with_bos = general_questions + article_spec_questions        
         random.shuffle(all_questions_with_bos)
+        all_questions_with_bos.append(self.tokenizer.eos_token)
         
         label = ''.join(all_questions_with_bos)
 
