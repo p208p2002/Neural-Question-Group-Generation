@@ -54,7 +54,10 @@ def print_global_info(predict_dataset,use_like_score):
                 question_scores = predict_dataset[_qi]['unlike_question_scores']
             foramt_col_names = ''
             for score_key in question_scores[0].keys():
-                foramt_col_names += "{:<10}".format(score_key[:8])
+                if use_like_score:
+                    foramt_col_names += "{:<10}".format(score_key[:8])
+                else:
+                    foramt_col_names += "{:<10}".format("*"+score_key[:7])
                 col_names.add(score_key)
             break
         except:
@@ -142,7 +145,11 @@ if __name__ == "__main__":
         cos_s = ''
         if len(question_scores) > 0:
             for score_key in question_scores[0].keys():
-                cos_s += "{:<10}".format(score_key[:8])
+                if use_like_score:
+                    cos_s += "{:<10}".format(score_key[:8])
+                else:
+                    score_key = "*"+score_key
+                    cos_s += "{:<10}".format(score_key[:8])
 
         # Predicts
         print("{:<64}".format('Predicts:')+cos_s)
