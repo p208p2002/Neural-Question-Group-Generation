@@ -131,9 +131,19 @@ class Model(pl.LightningModule):
         # add score
         output['question_scores'] = []
         output['unlike_question_scores'] = []
-        for question in output['questions']:
+        for i,question in enumerate(output['questions']):
+            question = question.strip().replace("\n","")
             # like score
-            score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
+            # score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
+            try:
+                score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
+            except:
+                print("like score error")
+                print("Q:",question)
+                print("L:",output['labels'])
+                exit()
+                
+            
             del score['CIDEr']
             bP, bR, bF1 = self.bert_scorer.score([question], [output['labels']])
             score['BertScore'] = bF1.item()
@@ -142,9 +152,25 @@ class Model(pl.LightningModule):
 
             # unlike score
             _questions = output['questions'][:]
-            _questions.remove(question)
+            
+            # prevent nlgeval error
+            _questions = [q.strip().replace("\n","") for q in _questions]
+            _questions.pop(i) # remove self for eval's ref
+            for _q in _questions[:]:
+                if _q == '': _questions.remove(_q)
             if len(_questions) == 0: _questions.append("@")
-            score = self.nlgeval.compute_individual_metrics(hyp=question, ref=_questions)
+            if question == '': question = '#'
+
+            #
+            # score = self.nlgeval.compute_individual_metrics(hyp=question, ref=_questions)
+            try:
+                score = self.nlgeval.compute_individual_metrics(hyp=question, ref=_questions)
+            except:
+                print("unlike score error")
+                print("Q:",question)
+                print("L:",_questions)
+                exit()
+
             del score['CIDEr']
             bP, bR, bF1 = self.bert_scorer.score([question], [_questions])
             score['BertScore'] = bF1.item()

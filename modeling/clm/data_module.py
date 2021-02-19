@@ -317,6 +317,10 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
         self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
 
+        # attr
+        self.count_general_question = 0
+        self.count_article_spec_question = 0
+
         # select general question
         self.all_general_questions = []
         new_datas = []
@@ -329,7 +333,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             general_questions = []
             for all_question in all_questions:
                 if all_question not in article_spec_questions:
-                    general_questions.append(all_question)            
+                    general_questions.append(all_question)   
+            # if len(general_questions) == 0: continue; # keep only g-type >0         
             data['general_questions'] = general_questions
             self.all_general_questions+=general_questions
             new_datas.append(data)
@@ -343,12 +348,15 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         context = data['article']
 
         general_questions = data['general_questions'][:]
-        if len(general_questions) == 0:
-            general_questions.append(self.random_general_question())
+
+        # if len(general_questions) == 0:
+        #     general_questions.append(self.random_general_question())
+
+        self.count_general_question += len(general_questions)
         general_questions = [self.bos_tokens[0]+ q for q in general_questions]
-        # general_questions =  self.bos_tokens[0] + self.bos_tokens[0].join(general_questions)
 
         article_spec_questions = data['article_spec_questions'][:]
+        self.count_article_spec_question += len(article_spec_questions)
         article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
 
         all_questions_with_bos = general_questions + article_spec_questions        
