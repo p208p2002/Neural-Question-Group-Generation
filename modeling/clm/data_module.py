@@ -333,9 +333,9 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             all_questions = data['questions'][:]
             # if len(all_questions) == 0: continue
             general_questions = []
-            for all_question in all_questions:
-                if all_question not in article_spec_questions:
-                    general_questions.append(all_question)   
+            # for all_question in all_questions:
+            #     if all_question not in article_spec_questions:
+            #         general_questions.append(all_question)   
             # if len(general_questions) == 0: continue; # keep only g-type >0         
             data['general_questions'] = general_questions
             self.all_general_questions+=general_questions
@@ -352,14 +352,15 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         general_questions = data['general_questions'][:]
         self.count_general_question += len(general_questions)
         general_questions = [self.bos_tokens[0]+ q for q in general_questions]
+        random.shuffle(general_questions)
 
         article_spec_questions = data['article_spec_questions'][:]
         self.count_article_spec_question += len(article_spec_questions)
         article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
+        random.shuffle(article_spec_questions)
 
-        all_questions_with_bos = general_questions + article_spec_questions        
-        random.shuffle(all_questions_with_bos)
-        all_questions_with_bos = all_questions_with_bos[:4] # get 4 questions
+        all_questions_with_bos = general_questions[:1] + article_spec_questions[:1]
+        # random.shuffle(all_questions_with_bos)
         all_questions_with_bos.append(self.tokenizer.eos_token)
         
         label = ''.join(all_questions_with_bos)
@@ -367,10 +368,11 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         # print('s_type:',len(article_spec_questions),'g_tpye:',len(general_questions),self.random_general_question())
 
         if not self.eval_input:
-            model_input = self.prepare_input(context[50:] + self.tokenizer.sep_token, label= label)
+            # context_shift = random.randint(0,200)
+            model_input = self.prepare_input(context + self.tokenizer.sep_token, label= label)
             return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
         else:
-            model_input = self.prepare_input(context[50:]  + self.tokenizer.sep_token, label= None)
+            model_input = self.prepare_input(context + self.tokenizer.sep_token, label= None)
             return self.construct_eval_output(
                 self.dataset_name,
                 model_input['input_ids'],

@@ -85,8 +85,9 @@ class Model(pl.LightningModule):
             early_stopping=True,
             temperature=0.85,
             do_sample=True,
-            top_p=0.80,
-            top_k=12,
+            top_p=0.9,
+            # top_k=12,
+            # num_beams=3,
             no_repeat_ngram_size=4,
             num_return_sequences=num_return_sequences,
             eos_token_id=self.tokenizer.eos_token_id,
@@ -99,23 +100,26 @@ class Model(pl.LightningModule):
         decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
         decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-        
+        decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
+    
         if 'm_race' in args.datasets:
-            decode_questions = decode_questions.split('_$')            
+            decode_questions = decode_questions.split('_$')
             new_decode_questions = []
             levels = []
             for decode_question in decode_questions:
                 level,question = _parse_question(decode_question)
+                if question =="": continue
                 new_decode_questions.append(question)
                 levels.append(level)
             decode_questions = new_decode_questions
         else:
             decode_questions = decode_questions.split(self.tokenizer.sep_token)
 
-        if decode_questions[-1] == self.tokenizer.eos_token:
+        if len(decode_questions) >0 and decode_questions[-1] == self.tokenizer.eos_token:
             decode_questions.pop(-1)
         
-        if len(decode_questions) >0 and decode_questions[0] == '':decode_questions.pop(0)
+        # if len(decode_questions) >0 and decode_questions[0] == '':
+        #     decode_questions.pop(0)
 
         output =  {
             'batch_idx':batch_idx,
@@ -124,9 +128,10 @@ class Model(pl.LightningModule):
             'labels':[_q[0] for _q in label_questions],
             'article':article[0]
         }
-        
+
         if 'm_race' in args.datasets:            
-            output['levels'] = levels[1:]
+            output['levels'] = levels
+        
 
         # add score
         output['question_scores'] = []
@@ -146,7 +151,7 @@ class Model(pl.LightningModule):
             
             del score['CIDEr']
             bP, bR, bF1 = self.bert_scorer.score([question], [output['labels']])
-            score['BertScore'] = bF1.item()
+            score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
             for k in score.keys(): score[k] = str(score[k])
             output['question_scores'].append(score)
 
@@ -173,7 +178,7 @@ class Model(pl.LightningModule):
 
             del score['CIDEr']
             bP, bR, bF1 = self.bert_scorer.score([question], [_questions])
-            score['BertScore'] = bF1.item()
+            score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
             for k in score.keys(): score[k] = str(score[k]) #
             output['unlike_question_scores'].append(score)
 

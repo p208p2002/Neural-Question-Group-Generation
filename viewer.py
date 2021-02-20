@@ -45,7 +45,7 @@ def print_global_info(predict_dataset,use_like_score):
 
     # search col name
     _qi = 0
-    col_names = set()
+    col_names = []
     while True:
         try:
             if use_like_score:
@@ -55,10 +55,10 @@ def print_global_info(predict_dataset,use_like_score):
             foramt_col_names = ''
             for score_key in question_scores[0].keys():
                 if use_like_score:
-                    foramt_col_names += "{:<10}".format(score_key[:8])
+                    foramt_col_names += "{:<20}".format(score_key[:18])
                 else:
-                    foramt_col_names += "{:<10}".format("*"+score_key[:7])
-                col_names.add(score_key)
+                    foramt_col_names += "{:<20}".format("*"+score_key[:17])
+                if score_key not in col_names: col_names.append(score_key)
             break
         except:
             _qi+=1
@@ -92,7 +92,7 @@ def print_global_info(predict_dataset,use_like_score):
         print(foramt_col_names)
         format_value = ''
         for score_key in scores[dataset_name].keys():
-            f_s = "{:<10}".format(format_float(round(scores[dataset_name][score_key]/gen_question_count[dataset_name]*100,6)))
+            f_s = "{:<20}".format(format_float(round((scores[dataset_name][score_key]/gen_question_count[dataset_name])*100,6)))
             format_value+=f_s
         print(format_value,end='\n\n')
 
@@ -110,6 +110,7 @@ if __name__ == "__main__":
     max_display = 800
     shift_step = 100
     current_index = 0
+    max_question_len = 100
 
     # predict
     predict_dataset = PredictDataset(args.log_file)
@@ -152,19 +153,19 @@ if __name__ == "__main__":
                     cos_s += "{:<10}".format(score_key[:8])
 
         # Predicts
-        print("{:<64}".format('Predicts:')+cos_s)
+        print(("{:<%d}"%(max_question_len+4)).format('Predicts:')+cos_s)
 
         if is_m_race:
             levels = predict_dataset[current_index]['levels']
             for q,s,l in zip(qs,question_scores,levels):
-                f_q = "{:<62}".format((l + q)[:60].replace("\n",""))
+                f_q = ("{:<%d}"%(max_question_len+2)).format((l + q)[:max_question_len].replace("\n",""))
                 f_s = ""
                 for score_key in s.keys():
                     f_s += "{:<10}".format(format_float(round(float(s[score_key])*100,5)))
                 predict_questions_and_scores.append(f_q+f_s)        
         else:
             for q,s in zip(qs,question_scores):
-                f_q = "{:<62}".format(q[:60].replace("\n",""))
+                f_q = ("{:<%d}"%(max_question_len+2)).format(q[:max_question_len].replace("\n",""))
                 f_s = ""
                 for score_key in s.keys():
                     f_s += "{:<10}".format(format_float(round(float(s[score_key])*100,5)))
