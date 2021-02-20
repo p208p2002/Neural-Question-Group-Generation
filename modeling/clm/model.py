@@ -174,7 +174,7 @@ class Model(pl.LightningModule):
             del score['CIDEr']
             bP, bR, bF1 = self.bert_scorer.score([question], [_questions])
             score['BertScore'] = bF1.item()
-            for k in score.keys(): score[k] = str(1.0-score[k]) #
+            for k in score.keys(): score[k] = str(score[k]) #
             output['unlike_question_scores'].append(score)
 
         # log
