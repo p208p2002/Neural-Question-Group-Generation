@@ -138,8 +138,8 @@ class UtilsMixin():
         label_input['attention_mask'] = [0]*len(label_input['input_ids'])
 
         # limit context length
-        context_input['input_ids'] = context_input['input_ids'][:self.max_context_length]
-        context_input['attention_mask'] = context_input['attention_mask'][:self.max_context_length]
+        context_input['input_ids'] = context_input['input_ids'][:self.max_length - len(label_input['input_ids'])]
+        context_input['attention_mask'] = context_input['attention_mask'][:self.max_length - len(label_input['input_ids'])]
 
         model_input = {}
         model_input['input_ids'] = context_input['input_ids'] + label_input['input_ids']
@@ -153,12 +153,9 @@ class UtilsMixin():
         pad_mask = [0]*self.max_length
         pad_labels = [-100]*self.max_length
 
-        # pos_ids = list(range(int(self.max_length/4)))*4
-
         model_input['input_ids'] = (model_input['input_ids'] + pad_ids)[:self.max_length] 
         model_input['attention_mask'] = (model_input['attention_mask'] + pad_mask)[:self.max_length] 
         model_input['labels'] = (model_input['labels'] + pad_labels)[:self.max_length]
-        # model_input['position_ids'] = pos_ids[:self.max_length]
 
         # convert to tensor
         for key in model_input.keys():
@@ -317,7 +314,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
-        self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
+        self.bos_tokens = [_GENERAL_LEVEL+" ",_MIDDLE_LEVEL+" "]
 
         # attr
         self.count_general_question = 0
@@ -332,11 +329,13 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             if len(article_spec_questions) == 0: continue; # keep only s-type >0
             all_questions = data['questions'][:]
             # if len(all_questions) == 0: continue
+            
             general_questions = []
-            # for all_question in all_questions:
-            #     if all_question not in article_spec_questions:
-            #         general_questions.append(all_question)   
-            # if len(general_questions) == 0: continue; # keep only g-type >0         
+            for all_question in all_questions:
+                if all_question not in article_spec_questions:
+                    general_questions.append(all_question)   
+            if len(general_questions) == 0: continue; # keep only g-type >0
+
             data['general_questions'] = general_questions
             self.all_general_questions+=general_questions
             new_datas.append(data)
@@ -363,7 +362,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         # random.shuffle(all_questions_with_bos)
         all_questions_with_bos.append(self.tokenizer.eos_token)
         
-        label = ''.join(all_questions_with_bos)
+        label = ' '.join(all_questions_with_bos)
 
         # print('s_type:',len(article_spec_questions),'g_tpye:',len(general_questions),self.random_general_question())
 

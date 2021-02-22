@@ -158,7 +158,7 @@ if __name__ == "__main__":
         if is_m_race:
             levels = predict_dataset[current_index]['levels']
             for q,s,l in zip(qs,question_scores,levels):
-                f_q = ("{:<%d}"%(max_question_len+2)).format((l + q)[:max_question_len].replace("\n",""))
+                f_q = ("{:<%d}"%(max_question_len+2)).format(((str(l) +" "+ q)[:max_question_len]).replace("\n",""))
                 f_s = ""
                 for score_key in s.keys():
                     f_s += "{:<10}".format(format_float(round(float(s[score_key])*100,5)))

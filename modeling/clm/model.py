@@ -88,7 +88,7 @@ class Model(pl.LightningModule):
             top_p=0.9,
             # top_k=12,
             # num_beams=3,
-            no_repeat_ngram_size=4,
+            no_repeat_ngram_size=3,
             num_return_sequences=num_return_sequences,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id
@@ -188,20 +188,6 @@ class Model(pl.LightningModule):
         with open(os.path.join(log_dir,'predict.jsonl'),'a',encoding='utf-8') as log_f:
             output_str = json.dumps(output,ensure_ascii=False) + '\n'
             log_f.write(output_str)
-    
-    # def test_epoch_end(self,outputs):
-    #     log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
-    #     with open(os.path.join(log_dir,'predict.jsonl'),'r',encoding='utf-8') as log_f, open(os.path.join(log_dir,'predict2.jsonl'),'a',encoding='utf-8') as log_f2:
-    #         data_lines = log_f.readlines()
-    #         for data_line in data_lines:
-    #             output = json.loads(data_line)
-    #             for question in output['questions']:
-    #                 score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
-    #                 del score['CIDEr']
-    #                 bP, bR, bF1 = self.bert_scorer.score([question], [output['labels']])
-    #                 score['BertScore'] = bF1.item()
-    #                 for k in score.keys(): score[k] = str(score[k])
-    #                 output['question_scores'].append(score)
                 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
