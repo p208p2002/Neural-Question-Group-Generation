@@ -129,41 +129,34 @@ class UtilsMixin():
         if label is None:
             model_input = tokenizer(context,return_tensors='pt',max_length=self.max_context_length,truncation=True)
             model_input['input_ids'] = model_input['input_ids'].squeeze(0) # fix shape bug with tokenizer
-            model_input['attention_mask'] = model_input['attention_mask'].squeeze(0) # fix shape bug with tokenizer
             return model_input
 
         context_input = tokenizer(context)
-        
         label_input = tokenizer(label)
-        label_input['attention_mask'] = [0]*len(label_input['input_ids'])
-
+        
         # limit context length
         context_input['input_ids'] = context_input['input_ids'][:self.max_length - len(label_input['input_ids'])]
-        context_input['attention_mask'] = context_input['attention_mask'][:self.max_length - len(label_input['input_ids'])]
-
+        
         model_input = {}
         model_input['input_ids'] = context_input['input_ids'] + label_input['input_ids']
-        model_input['attention_mask'] = context_input['attention_mask'] + label_input['attention_mask']
         model_input['labels'] = model_input['input_ids'][:]
-        for i,(l,a) in enumerate(zip(model_input['labels'],model_input['attention_mask'])):
-            if a == 1: model_input['labels'][i] = -100
+        for i,_ in enumerate(context_input['input_ids']):
+            model_input['labels'][i] = -100
 
         # pad or limit to max length
         pad_ids = [self.pad_token_id]*self.max_length
-        pad_mask = [0]*self.max_length
         pad_labels = [-100]*self.max_length
 
         model_input['input_ids'] = (model_input['input_ids'] + pad_ids)[:self.max_length] 
-        model_input['attention_mask'] = (model_input['attention_mask'] + pad_mask)[:self.max_length] 
         model_input['labels'] = (model_input['labels'] + pad_labels)[:self.max_length]
 
         # convert to tensor
         for key in model_input.keys():
             model_input[key] = torch.LongTensor(model_input[key])
-        
+
         return model_input
 
-    def construct_eval_output(self,dataset_name,input_ids,attention_mask,label_questions,article):
+    def construct_eval_output(self,dataset_name,input_ids,label_questions,article):
         """
         dataset_name: str
         input_ids: tensor
@@ -171,7 +164,7 @@ class UtilsMixin():
         label_questions: list[str]
         article: str
         """
-        return dataset_name,input_ids,attention_mask,label_questions,article
+        return dataset_name,input_ids,label_questions,article
 
 class RaceDataset(Dataset,UtilsMixin):
     def __init__(self,split_set,level,dataset_dir='datasets/RACE',eval_input=False):
@@ -204,13 +197,12 @@ class RaceDataset(Dataset,UtilsMixin):
 
             if not self.eval_input:
                 model_input = self.prepare_input(context + self.bos_token, label= label)
-                return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
+                return model_input['input_ids'],model_input['labels']
             else:
                 model_input = self.prepare_input(context + self.bos_token, label= None)
                 return self.construct_eval_output(
                     self.dataset_name,
                     model_input['input_ids'],
-                    model_input['attention_mask'],
                     questions[:-1],
                     data['article']
                 )
@@ -244,13 +236,12 @@ class EQGRaceDataset(Dataset,UtilsMixin):
 
         if not self.eval_input:
             model_input = self.prepare_input(context + self.bos_token, label= label)
-            return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
+            return model_input['input_ids'],model_input['labels']
         else:
             model_input = self.prepare_input(context + self.bos_token, label= None)
             return self.construct_eval_output(
                 self.dataset_name,
                 model_input['input_ids'],
-                model_input['attention_mask'],
                 data['article_spec_questions'],
                 data['article']
             )
@@ -293,13 +284,12 @@ class GeneralRaceDataset(Dataset,UtilsMixin):
 
         if not self.eval_input:
             model_input = self.prepare_input(context + self.bos_token, label= label)
-            return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
+            return model_input['input_ids'],model_input['labels']
         else:
             model_input = self.prepare_input(context + self.bos_token, label= None)
             return self.construct_eval_output(
                 self.dataset_name,
                 model_input['input_ids'],
-                model_input['attention_mask'],
                 data['general_questions'],
                 data['article']
             )
@@ -358,7 +348,9 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
         random.shuffle(article_spec_questions)
 
-        all_questions_with_bos = general_questions[:1] + article_spec_questions[:1]
+        # all_questions_with_bos = general_questions[:1] + article_spec_questions[:1]
+        # random.shuffle(all_questions_with_bos)
+        all_questions_with_bos = general_questions + article_spec_questions
         # random.shuffle(all_questions_with_bos)
         all_questions_with_bos.append(self.tokenizer.eos_token)
         
@@ -369,13 +361,12 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         if not self.eval_input:
             # context_shift = random.randint(0,200)
             model_input = self.prepare_input(context + self.tokenizer.sep_token, label= label)
-            return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
+            return model_input['input_ids'],model_input['labels']
         else:
             model_input = self.prepare_input(context + self.tokenizer.sep_token, label= None)
             return self.construct_eval_output(
                 self.dataset_name,
                 model_input['input_ids'],
-                model_input['attention_mask'],
                 data['general_questions'] + data['article_spec_questions'],
                 data['article']
             )

@@ -36,12 +36,14 @@ def print_global_info(predict_dataset,use_like_score):
     dataset_names = set()
     dataset_names.add('all')
     gen_question_count = {}
+    label_question_count = {}
     for i in range(len(predict_dataset)):
         data = predict_dataset[i]
         dataset_names.add(data['dataset_name'])
     
     for dataset_name in dataset_names:
         gen_question_count[dataset_name] = 0
+        label_question_count[dataset_name] = 0
 
     # search col name
     _qi = 0
@@ -66,10 +68,13 @@ def print_global_info(predict_dataset,use_like_score):
     
     # init score
     scores = {}
+    classmate_scores = {}
     for dataset_name in dataset_names:
         scores[dataset_name] = {}
+        classmate_scores[dataset_name] = {}
         for col_name in col_names:
             scores[dataset_name][col_name] = 0.0
+            classmate_scores[dataset_name][col_name] = 0.0
             
     # total_question_count = 0
     for i in range(len(predict_dataset)):
@@ -79,6 +84,8 @@ def print_global_info(predict_dataset,use_like_score):
         else:
             question_scores = data['unlike_question_scores']
         dataset_name = data['dataset_name']
+
+        #
         for question_score in question_scores:
             # total_question_count+=1
             gen_question_count[dataset_name] += 1
@@ -86,7 +93,18 @@ def print_global_info(predict_dataset,use_like_score):
             for score_key in question_score.keys():
                 scores[dataset_name][score_key] += float(question_score[score_key])
                 scores['all'][score_key] += float(question_score[score_key])
-    
+        
+        label_scores = data['unlike_label_scores']
+        for label_score in label_scores:
+            label_question_count[dataset_name] += 1
+            label_question_count['all'] += 1
+            for score_key in label_score.keys():
+                classmate_scores[dataset_name][score_key] += float(label_score[score_key])
+                classmate_scores['all'][score_key] += float(label_score[score_key])
+    if use_like_score:
+        print('-'*10,'predict references smilarity','-'*10)
+    else:
+        print('-'*10,'predict classmate smilarity','-'*10)
     for dataset_name in dataset_names:
         print(dataset_name)
         print(foramt_col_names)
@@ -95,9 +113,20 @@ def print_global_info(predict_dataset,use_like_score):
             f_s = "{:<20}".format(format_float(round((scores[dataset_name][score_key]/gen_question_count[dataset_name])*100,6)))
             format_value+=f_s
         print(format_value,end='\n\n')
+    
+    print('-'*10,'label classmate smilarity','-'*10)
+    for dataset_name in dataset_names:
+        print(dataset_name)
+        print(foramt_col_names)
+        format_value = ''
+        for score_key in classmate_scores[dataset_name].keys():
+            f_s = "{:<20}".format(format_float(round((classmate_scores[dataset_name][score_key]/label_question_count[dataset_name])*100,6)))
+            format_value+=f_s
+        print(format_value,end='\n\n')
 
     print("datasets:",dataset_names)
     print("generate questions:",gen_question_count)
+    print("label questions:",label_question_count)
 
     print(end='\n\n')
     print("exit:(q) or (o)")
@@ -174,8 +203,21 @@ if __name__ == "__main__":
         print('- '+'\n- '.join(predict_questions_and_scores),end='\n\n')
 
         # References
-        print("References:")
-        print('- '+'\n- '.join(predict_dataset[current_index]['labels']),end='\n\n')
+        if use_like_score:
+            print("References:")
+            print('- '+'\n- '.join(predict_dataset[current_index]['labels']),end='\n\n')
+        else:
+            print(("{:<%d}"%(max_question_len+4)).format('References:')+cos_s)
+            predict_questions_and_scores=[]
+            question_scores = predict_dataset[current_index]['unlike_label_scores']
+            for q,s in zip(predict_dataset[current_index]['labels'],question_scores):
+                f_q = ("{:<%d}"%(max_question_len+2)).format(q[:max_question_len].replace("\n",""))
+                f_s = ""
+                for score_key in s.keys():
+                    f_s += "{:<10}".format(format_float(round(float(s[score_key])*100,5)))
+                predict_questions_and_scores.append(f_q+f_s)
+            print('- '+'\n- '.join(predict_questions_and_scores),end='\n\n')
+        
 
         # Article
         print("Article:")

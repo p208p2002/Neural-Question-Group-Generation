@@ -2,7 +2,16 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--base_model',default='gpt2',type=str, choices=['gpt2','xlnet-base-cased'])
+    parser.add_argument('--base_model',default='gpt2',type=str, 
+        choices=[
+                'gpt2',
+                'xlnet-base-cased',
+                'transfo-xl-wt103',
+                'google/reformer-crime-and-punishment',
+                'google/reformer-enwik8',
+                'facebook/bart-base',
+                'microsoft/DialoGPT-medium'
+            ])
     parser.add_argument('--epoch',default=10,type=int)
     parser.add_argument('--batch_size',default=10,type=int)
     parser.add_argument('--lr',type=float,default=5e-5)

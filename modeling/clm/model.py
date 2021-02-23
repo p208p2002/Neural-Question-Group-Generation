@@ -33,16 +33,23 @@ class Model(pl.LightningModule):
         self.model = AutoModelForCausalLM.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
 
-    def forward(self, input_ids,attention_mask,labels=None):
-        return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
+    def forward(self, input_ids,labels=None):
+        return self.model(input_ids=input_ids,labels=labels,return_dict=True)
     
     def training_step(self, batch, batch_idx):
-        outputs = self(batch[0],batch[1],batch[2])
-        return outputs['loss']
+        outputs = self(batch[0],batch[1])
+        if args.base_model == 'transfo-xl-wt103':
+            loss = outputs['losses'].mean()
+        else:
+            loss = outputs['loss']
+        return loss
     
     def validation_step(self, batch, batch_idx):
-        outputs = self(batch[0],batch[1],batch[2])
-        loss = outputs['loss']
+        outputs = self(batch[0],batch[1])
+        if args.base_model == 'transfo-xl-wt103':
+            loss = outputs['losses'].mean()
+        else:
+            loss = outputs['loss']
         self.log('dev_loss',loss)
     
     def on_test_epoch_start(self):
@@ -64,14 +71,35 @@ class Model(pl.LightningModule):
         self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
         print("loading BERTScorer...finish")
     
+    def compute_score(self,hyp,refs):
+        #
+        hyp = hyp.strip().replace("\n","")
+        if hyp == '': hyp = '#'
+
+        #
+        refs = refs[:]
+        refs = [ref.strip().replace("\n","") for ref in refs]
+        for ref in refs[:]:
+            if ref == '': refs.remove(ref)
+            if len(refs) == 0: refs.append("@")
+            
+        score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
+        
+        del score['CIDEr']
+        bP, bR, bF1 = self.bert_scorer.score([hyp], [refs])
+        score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
+        for k in score.keys(): score[k] = str(score[k])
+
+        return score
+
+    
     def test_step(self, batch, batch_idx):
         # tensor
         dataset_name = batch[0][0]
         input_ids = batch[1]
-        attention_mask = batch[2]
         # string
-        label_questions = batch[3]
-        article = batch[4]
+        label_questions = batch[2]
+        article = batch[3]
 
         input_ids_len = input_ids.shape[-1]
         batch_size = input_ids.shape[0]
@@ -80,7 +108,6 @@ class Model(pl.LightningModule):
         num_return_sequences = 1
         sample_outputs = self.model.generate(
             input_ids = input_ids,
-            attention_mask = attention_mask,
             max_length=MAX_LENGTH,
             early_stopping=True,
             temperature=0.85,
@@ -88,7 +115,7 @@ class Model(pl.LightningModule):
             top_p=0.9,
             # top_k=12,
             # num_beams=3,
-            no_repeat_ngram_size=3,
+            no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id
@@ -117,9 +144,6 @@ class Model(pl.LightningModule):
 
         if len(decode_questions) >0 and decode_questions[-1] == self.tokenizer.eos_token:
             decode_questions.pop(-1)
-        
-        # if len(decode_questions) >0 and decode_questions[0] == '':
-        #     decode_questions.pop(0)
 
         output =  {
             'batch_idx':batch_idx,
@@ -137,50 +161,25 @@ class Model(pl.LightningModule):
         output['question_scores'] = []
         output['unlike_question_scores'] = []
         for i,question in enumerate(output['questions']):
-            question = question.strip().replace("\n","")
+
             # like score
-            # score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
-            try:
-                score = self.nlgeval.compute_individual_metrics(hyp=question, ref=output['labels'])
-            except:
-                print("like score error")
-                print("Q:",question)
-                print("L:",output['labels'])
-                exit()
-                
-            
-            del score['CIDEr']
-            bP, bR, bF1 = self.bert_scorer.score([question], [output['labels']])
-            score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
-            for k in score.keys(): score[k] = str(score[k])
+            score = self.compute_score(question,output['labels'])
             output['question_scores'].append(score)
 
             # unlike score
-            _questions = output['questions'][:]
-            
-            # prevent nlgeval error
-            _questions = [q.strip().replace("\n","") for q in _questions]
-            _questions.pop(i) # remove self for eval's ref
-            for _q in _questions[:]:
-                if _q == '': _questions.remove(_q)
-            if len(_questions) == 0: _questions.append("@")
-            if question == '': question = '#'
-
-            #
-            # score = self.nlgeval.compute_individual_metrics(hyp=question, ref=_questions)
-            try:
-                score = self.nlgeval.compute_individual_metrics(hyp=question, ref=_questions)
-            except:
-                print("unlike score error")
-                print("Q:",question)
-                print("L:",_questions)
-                exit()
-
-            del score['CIDEr']
-            bP, bR, bF1 = self.bert_scorer.score([question], [_questions])
-            score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
-            for k in score.keys(): score[k] = str(score[k]) #
+            questions = output['questions'][:]
+            questions.pop(i)
+            score = self.compute_score(hyp=question, refs=questions)
             output['unlike_question_scores'].append(score)
+        
+        #
+        output['unlike_label_scores'] = []
+        for i,label in enumerate(output['labels']):
+            # unlike score
+            labels = output['labels'][:]
+            labels.pop(i)
+            score = self.compute_score(hyp=label, refs=labels)
+            output['unlike_label_scores'].append(score)
 
         # log
         log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir

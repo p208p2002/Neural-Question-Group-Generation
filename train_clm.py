@@ -4,13 +4,14 @@ from modeling.clm.model import Model
 from modeling.clm.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
+from modeling.clm.config import GPUS,ACCELERATOR
 args = argparser.get_args()
 
 if __name__ == "__main__":
     
     trainer = pl.Trainer(
-        gpus=-1,
-        accelerator='dp',
+        gpus=GPUS,
+        accelerator=ACCELERATOR,
         fast_dev_run=args.dev,
         precision=32,
         default_root_dir='.log_clm',
