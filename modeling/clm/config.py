@@ -2,8 +2,8 @@ from .argparser import get_args
 _args = get_args()
 
 if _args.base_model in ['xlnet-base-cased','transfo-xl-wt103']:
-    ACCELERATOR = None
-    GPUS = 1
+    ACCELERATOR = 'dp'
+    GPUS = -1
     MAX_LENGTH = 2048
     MAX_CONTEXT_LENGTH = 1800
 elif _args.base_model in ['google/reformer-crime-and-punishment']:
