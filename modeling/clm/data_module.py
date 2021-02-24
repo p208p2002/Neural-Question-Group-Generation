@@ -109,14 +109,13 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
 
 class UtilsMixin():
-    def set_config(self,dataset_name, eval_input, bos_token, max_length=MAX_LENGTH ,max_context_length=MAX_CONTEXT_LENGTH ):
+    def set_config(self,dataset_name, eval_input, bos_token, max_length=MAX_LENGTH ):
         # general config
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
 
         self.max_length = max_length
-        self.max_context_length = max_context_length
 
         # spec config
         self.dataset_name = dataset_name
