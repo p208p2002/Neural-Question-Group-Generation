@@ -19,7 +19,7 @@ elif _args.base_model in ['google/reformer-enwik8']:
 else:
     ACCELERATOR = 'dp'
     GPUS = -1
-    MAX_LENGTH = 1024
-    MAX_CONTEXT_LENGTH = 840
+    MAX_LENGTH = 3096
+    MAX_CONTEXT_LENGTH = 2688
 
 MAX_QUESTION_LENGTH = MAX_LENGTH - MAX_CONTEXT_LENGTH

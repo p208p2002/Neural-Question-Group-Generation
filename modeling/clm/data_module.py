@@ -125,30 +125,27 @@ class UtilsMixin():
         
     def prepare_input(self,context,label=None):
         tokenizer = self.tokenizer
-
-        if label is None:
-            model_input = tokenizer(context,return_tensors='pt',max_length=self.max_context_length,truncation=True)
-            model_input['input_ids'] = model_input['input_ids'].squeeze(0) # fix shape bug with tokenizer
-            return model_input
-
-        context_input = tokenizer(context)
-        label_input = tokenizer(label)
+        pad_token_id = tokenizer.pad_token_id
+        input_encodings = tokenizer(context, pad_to_max_length=True, max_length=self.max_length, truncation=True, add_special_tokens=False)
         
-        # limit context length
-        context_input['input_ids'] = context_input['input_ids'][:self.max_length - len(label_input['input_ids'])]
-        
-        model_input = {}
-        model_input['input_ids'] = context_input['input_ids'] + label_input['input_ids']
-        model_input['labels'] = model_input['input_ids'][:]
-        for i,_ in enumerate(context_input['input_ids']):
-            model_input['labels'][i] = -100
+        if label is not None:
+            labels = []
+            target_encodings = tokenizer(label, pad_to_max_length=True, max_length=self.max_length, truncation=True, add_special_tokens=False)
+            for target_encoding_id in target_encodings['input_ids']:
+                if target_encoding_id != pad_token_id:
+                    labels.append(target_encoding_id)
+                else:
+                    labels.append(-100)
+        else:
+            labels = None
 
-        # pad or limit to max length
-        pad_ids = [self.pad_token_id]*self.max_length
-        pad_labels = [-100]*self.max_length
-
-        model_input['input_ids'] = (model_input['input_ids'] + pad_ids)[:self.max_length] 
-        model_input['labels'] = (model_input['labels'] + pad_labels)[:self.max_length]
+        #   
+        model_input = {
+            'input_ids':input_encodings['input_ids'],
+            'attention_mask':input_encodings['attention_mask'],
+            'labels': labels
+        }
+        if label is None: del model_input['labels']
 
         # convert to tensor
         for key in model_input.keys():
@@ -156,7 +153,7 @@ class UtilsMixin():
 
         return model_input
 
-    def construct_eval_output(self,dataset_name,input_ids,label_questions,article):
+    def construct_eval_output(self,dataset_name,input_ids,attention_mask,label_questions,article):
         """
         dataset_name: str
         input_ids: tensor
@@ -164,138 +161,138 @@ class UtilsMixin():
         label_questions: list[str]
         article: str
         """
-        return dataset_name,input_ids,label_questions,article
+        return dataset_name,input_ids,attention_mask,label_questions,article
 
-class RaceDataset(Dataset,UtilsMixin):
-    def __init__(self,split_set,level,dataset_dir='datasets/RACE',eval_input=False):
-        super().__init__()
-        assert split_set in ['dev','test','train']
-        assert level in ['all','middle','high']
-        self.all_file_paths = []
-        for root, dirs, files in os.walk(os.path.join(dataset_dir,split_set)):
-            for f in files:
-                if level == 'all':
-                    self.all_file_paths.append(os.path.join(root,f))
-                elif root == os.path.join(dataset_dir,split_set,level):
-                    self.all_file_paths.append(os.path.join(root,f))
+# class RaceDataset(Dataset,UtilsMixin):
+#     def __init__(self,split_set,level,dataset_dir='datasets/RACE',eval_input=False):
+#         super().__init__()
+#         assert split_set in ['dev','test','train']
+#         assert level in ['all','middle','high']
+#         self.all_file_paths = []
+#         for root, dirs, files in os.walk(os.path.join(dataset_dir,split_set)):
+#             for f in files:
+#                 if level == 'all':
+#                     self.all_file_paths.append(os.path.join(root,f))
+#                 elif root == os.path.join(dataset_dir,split_set,level):
+#                     self.all_file_paths.append(os.path.join(root,f))
 
-        #
-        self.set_config(dataset_name='race',eval_input=eval_input, bos_token=RACE_BOS)
+#         #
+#         self.set_config(dataset_name='race',eval_input=eval_input, bos_token=RACE_BOS)
             
-    def __getitem__(self,index):
-        with open(self.all_file_paths[index],'r',encoding='utf-8') as f:
-            data = json.load(f)
-            context = data['article']
-            _questions = data['questions'][:]
-            questions = []
-            for _q in _questions:
-                if _q[-1] == '?' and re.search('_',_q) is None: # keep only type is question
-                    questions.append(_q)
+#     def __getitem__(self,index):
+#         with open(self.all_file_paths[index],'r',encoding='utf-8') as f:
+#             data = json.load(f)
+#             context = data['article']
+#             _questions = data['questions'][:]
+#             questions = []
+#             for _q in _questions:
+#                 if _q[-1] == '?' and re.search('_',_q) is None: # keep only type is question
+#                     questions.append(_q)
             
-            questions.append(self.tokenizer.eos_token)
-            label = self.sep_token.join(questions) 
+#             questions.append(self.tokenizer.eos_token)
+#             label = self.sep_token.join(questions) 
 
-            if not self.eval_input:
-                model_input = self.prepare_input(context + self.bos_token, label= label)
-                return model_input['input_ids'],model_input['labels']
-            else:
-                model_input = self.prepare_input(context + self.bos_token, label= None)
-                return self.construct_eval_output(
-                    self.dataset_name,
-                    model_input['input_ids'],
-                    questions[:-1],
-                    data['article']
-                )
+#             if not self.eval_input:
+#                 model_input = self.prepare_input(context + self.bos_token, label= label)
+#                 return model_input['input_ids'],model_input['labels']
+#             else:
+#                 model_input = self.prepare_input(context + self.bos_token, label= None)
+#                 return self.construct_eval_output(
+#                     self.dataset_name,
+#                     model_input['input_ids'],
+#                     questions[:-1],
+#                     data['article']
+#                 )
             
-    def __len__(self):
-        return len(self.all_file_paths)
+#     def __len__(self):
+#         return len(self.all_file_paths)
 
-class EQGRaceDataset(Dataset,UtilsMixin):
-    def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
-        self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
-        self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
+# class EQGRaceDataset(Dataset,UtilsMixin):
+#     def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
+#         self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
+#         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
-        # config
-        self.set_config(dataset_name='eqg',eval_input=eval_input,bos_token=RACE_BOS)
+#         # config
+#         self.set_config(dataset_name='eqg',eval_input=eval_input,bos_token=RACE_BOS)
 
-        # filter no question
-        new_data = []
-        for index in range(len(self.data_lines)):
-            data = json.loads(self.data_lines[index])
-            questions = data['article_spec_questions']
-            if len(questions) > 0:
-                new_data.append(self.data_lines[index])
-        self.data_lines = new_data
+#         # filter no question
+#         new_data = []
+#         for index in range(len(self.data_lines)):
+#             data = json.loads(self.data_lines[index])
+#             questions = data['article_spec_questions']
+#             if len(questions) > 0:
+#                 new_data.append(self.data_lines[index])
+#         self.data_lines = new_data
 
-    def __getitem__(self,index):
-        data = json.loads(self.data_lines[index])
-        context = data['article']
-        questions = data['article_spec_questions'][:]
-        questions.append(self.tokenizer.eos_token)
-        label = self.sep_token.join(questions) 
+#     def __getitem__(self,index):
+#         data = json.loads(self.data_lines[index])
+#         context = data['article']
+#         questions = data['article_spec_questions'][:]
+#         questions.append(self.tokenizer.eos_token)
+#         label = self.sep_token.join(questions) 
 
-        if not self.eval_input:
-            model_input = self.prepare_input(context + self.bos_token, label= label)
-            return model_input['input_ids'],model_input['labels']
-        else:
-            model_input = self.prepare_input(context + self.bos_token, label= None)
-            return self.construct_eval_output(
-                self.dataset_name,
-                model_input['input_ids'],
-                data['article_spec_questions'],
-                data['article']
-            )
+#         if not self.eval_input:
+#             model_input = self.prepare_input(context + self.bos_token, label= label)
+#             return model_input['input_ids'],model_input['labels']
+#         else:
+#             model_input = self.prepare_input(context + self.bos_token, label= None)
+#             return self.construct_eval_output(
+#                 self.dataset_name,
+#                 model_input['input_ids'],
+#                 data['article_spec_questions'],
+#                 data['article']
+#             )
     
-    def __len__(self):
-        return len(self.data_lines)
+#     def __len__(self):
+#         return len(self.data_lines)
 
-class GeneralRaceDataset(Dataset,UtilsMixin):
-    def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
-        self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
-        self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
+# class GeneralRaceDataset(Dataset,UtilsMixin):
+#     def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
+#         self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
+#         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
-        # config
-        self.set_config(dataset_name='g_race',eval_input=eval_input,bos_token=_GENERAL_LEVEL)        
+#         # config
+#         self.set_config(dataset_name='g_race',eval_input=eval_input,bos_token=_GENERAL_LEVEL)        
 
-        # keep only general question
-        new_datas = []
-        for data_line in self.data_lines:
-            data = json.loads(data_line)
-            article_spec_questions = data['article_spec_questions'][:]
-            all_questions = data['questions'][:]
+#         # keep only general question
+#         new_datas = []
+#         for data_line in self.data_lines:
+#             data = json.loads(data_line)
+#             article_spec_questions = data['article_spec_questions'][:]
+#             all_questions = data['questions'][:]
 
-            general_questions = []
-            for all_question in all_questions:
-                if all_question not in article_spec_questions:
-                    general_questions.append(all_question)
-            if len(general_questions) >0: # remove no question
-                data['general_questions'] = general_questions
-                new_datas.append(data)
-        self.datas = new_datas
+#             general_questions = []
+#             for all_question in all_questions:
+#                 if all_question not in article_spec_questions:
+#                     general_questions.append(all_question)
+#             if len(general_questions) >0: # remove no question
+#                 data['general_questions'] = general_questions
+#                 new_datas.append(data)
+#         self.datas = new_datas
 
-    def __getitem__(self,index):
-        data = self.datas[index]
-        context = data['article']
-        general_questions = data['general_questions'][:]
+#     def __getitem__(self,index):
+#         data = self.datas[index]
+#         context = data['article']
+#         general_questions = data['general_questions'][:]
 
-        #
-        general_questions.append(self.tokenizer.eos_token)
-        label = self.sep_token.join(general_questions) 
+#         #
+#         general_questions.append(self.tokenizer.eos_token)
+#         label = self.sep_token.join(general_questions) 
 
-        if not self.eval_input:
-            model_input = self.prepare_input(context + self.bos_token, label= label)
-            return model_input['input_ids'],model_input['labels']
-        else:
-            model_input = self.prepare_input(context + self.bos_token, label= None)
-            return self.construct_eval_output(
-                self.dataset_name,
-                model_input['input_ids'],
-                data['general_questions'],
-                data['article']
-            )
+#         if not self.eval_input:
+#             model_input = self.prepare_input(context + self.bos_token, label= label)
+#             return model_input['input_ids'],model_input['labels']
+#         else:
+#             model_input = self.prepare_input(context + self.bos_token, label= None)
+#             return self.construct_eval_output(
+#                 self.dataset_name,
+#                 model_input['input_ids'],
+#                 data['general_questions'],
+#                 data['article']
+#             )
     
-    def __len__(self):
-        return len(self.datas)
+#     def __len__(self):
+#         return len(self.datas)
 
 class MergeRaceDataset(Dataset,UtilsMixin):
     def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
@@ -304,7 +301,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
-        self.bos_tokens = [_GENERAL_LEVEL+" ",_MIDDLE_LEVEL+" "]
+        self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
 
         # attr
         self.count_general_question = 0
@@ -352,21 +349,19 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         # random.shuffle(all_questions_with_bos)
         all_questions_with_bos = general_questions + article_spec_questions
         # random.shuffle(all_questions_with_bos)
+        all_questions_with_bos.insert(0,self.tokenizer.pad_token) # pad for bos
         all_questions_with_bos.append(self.tokenizer.eos_token)
-        
         label = ' '.join(all_questions_with_bos)
 
-        # print('s_type:',len(article_spec_questions),'g_tpye:',len(general_questions),self.random_general_question())
-
-        if not self.eval_input:
-            # context_shift = random.randint(0,200)
-            model_input = self.prepare_input(context + self.tokenizer.sep_token, label= label)
-            return model_input['input_ids'],model_input['labels']
+        if not self.eval_input: # train
+            model_input = self.prepare_input(context, label= label)
+            return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
         else:
-            model_input = self.prepare_input(context + self.tokenizer.sep_token, label= None)
+            model_input = self.prepare_input(context, label= None)
             return self.construct_eval_output(
                 self.dataset_name,
                 model_input['input_ids'],
+                model_input['attention_mask'],
                 data['general_questions'] + data['article_spec_questions'],
                 data['article']
             )

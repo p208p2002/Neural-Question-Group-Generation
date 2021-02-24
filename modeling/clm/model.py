@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForSeq2SeqLM
 from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
@@ -30,14 +30,14 @@ class Model(pl.LightningModule):
     def __init__(self):
         super().__init__()
         self.tokenizer = get_tokenizer()
-        self.model = AutoModelForCausalLM.from_pretrained(args.base_model)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
 
-    def forward(self, input_ids,labels=None):
-        return self.model(input_ids=input_ids,labels=labels,return_dict=True)
+    def forward(self, input_ids,attention_mask,labels=None):
+        return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
     
     def training_step(self, batch, batch_idx):
-        outputs = self(batch[0],batch[1])
+        outputs = self(batch[0],batch[1],batch[2])
         if args.base_model == 'transfo-xl-wt103':
             loss = outputs['losses'].mean()
         else:
@@ -45,7 +45,7 @@ class Model(pl.LightningModule):
         return loss
     
     def validation_step(self, batch, batch_idx):
-        outputs = self(batch[0],batch[1])
+        outputs = self(batch[0],batch[1],batch[2])
         if args.base_model == 'transfo-xl-wt103':
             loss = outputs['losses'].mean()
         else:
@@ -81,7 +81,7 @@ class Model(pl.LightningModule):
         refs = [ref.strip().replace("\n","") for ref in refs]
         for ref in refs[:]:
             if ref == '': refs.remove(ref)
-            if len(refs) == 0: refs.append("@")
+        if len(refs) == 0: refs.append("@")
             
         score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
         
@@ -97,9 +97,10 @@ class Model(pl.LightningModule):
         # tensor
         dataset_name = batch[0][0]
         input_ids = batch[1]
+        attention_mask = batch[2]
         # string
-        label_questions = batch[2]
-        article = batch[3]
+        label_questions = batch[3]
+        article = batch[4]
 
         input_ids_len = input_ids.shape[-1]
         batch_size = input_ids.shape[0]
@@ -108,6 +109,7 @@ class Model(pl.LightningModule):
         num_return_sequences = 1
         sample_outputs = self.model.generate(
             input_ids = input_ids,
+            attention_mask=attention_mask,
             max_length=MAX_LENGTH,
             early_stopping=True,
             temperature=0.85,
@@ -117,14 +119,16 @@ class Model(pl.LightningModule):
             # num_beams=3,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences,
+            bos_token_id=self.tokenizer.pad_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id
         )
 
+
         assert len(sample_outputs) == num_return_sequences # 1
         sample_output = sample_outputs[0]        
         
-        decode_questions = self.tokenizer.decode(sample_output[input_ids_len:], skip_special_tokens=False)
+        decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
         decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
         decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
