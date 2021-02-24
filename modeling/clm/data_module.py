@@ -300,7 +300,11 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
-        self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
+        # self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
+        # self.bos_tokens = [_GENERAL_LEVEL+" ",_GENERAL_LEVEL+" "]
+        self.bos_tokens = []
+        for i in range(20):
+            self.bos_tokens.append("$_[%d]"%i)
 
         # attr
         self.count_general_question = 0
@@ -331,24 +335,30 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         return self.all_general_questions[random.randint(0,len(self.all_general_questions)-1)]
 
     def __getitem__(self,index):
+        self.bos_tokens = []
+        for i in range(20):
+            self.bos_tokens.append("_$[%d]"%i)
+
         data = self.datas[index]
         context = data['article']
 
         general_questions = data['general_questions'][:]
         self.count_general_question += len(general_questions)
-        general_questions = [self.bos_tokens[0]+ q for q in general_questions]
-        random.shuffle(general_questions)
+        # general_questions = [self.bos_tokens[0]+ q for q in general_questions]
+        # random.shuffle(general_questions)
+        # general_questions = [self.bos_tokens.pop(0)+ q for q in general_questions]
 
         article_spec_questions = data['article_spec_questions'][:]
         self.count_article_spec_question += len(article_spec_questions)
-        article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
-        random.shuffle(article_spec_questions)
+        # article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
+        # random.shuffle(article_spec_questions)
+        # article_spec_questions = [self.bos_tokens.pop(0)+ q for q in article_spec_questions]
 
         # all_questions_with_bos = general_questions[:1] + article_spec_questions[:1]
         # random.shuffle(all_questions_with_bos)
         all_questions_with_bos = general_questions + article_spec_questions
-        # random.shuffle(all_questions_with_bos)
-        all_questions_with_bos.insert(0,self.tokenizer.pad_token) # pad for bos
+        random.shuffle(all_questions_with_bos)
+        all_questions_with_bos = [self.bos_tokens.pop(0)+ q for q in all_questions_with_bos]
         all_questions_with_bos.append(self.tokenizer.eos_token)
         label = ' '.join(all_questions_with_bos)
 

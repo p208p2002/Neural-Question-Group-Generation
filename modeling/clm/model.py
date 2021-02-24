@@ -119,20 +119,21 @@ class Model(pl.LightningModule):
             # num_beams=3,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences,
-            bos_token_id=self.tokenizer.pad_token_id,
+            bos_token_id=self.model.config.decoder_start_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
-            pad_token_id=self.tokenizer.pad_token_id
+            # pad_token_id=self.tokenizer.pad_token_id
         )
 
 
         assert len(sample_outputs) == num_return_sequences # 1
         sample_output = sample_outputs[0]        
-        
         decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
         decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
+        decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
+        decode_questions = decode_questions.strip()
         decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
-    
+        
         if 'm_race' in args.datasets:
             decode_questions = decode_questions.split('_$')
             new_decode_questions = []
@@ -146,8 +147,9 @@ class Model(pl.LightningModule):
         else:
             decode_questions = decode_questions.split(self.tokenizer.sep_token)
 
-        if len(decode_questions) >0 and decode_questions[-1] == self.tokenizer.eos_token:
-            decode_questions.pop(-1)
+        # if len(decode_questions) >0 and decode_questions[-1] == self.tokenizer.eos_token:
+        #     decode_questions.pop(-1)
+        # print(len(decode_questions))
 
         output =  {
             'batch_idx':batch_idx,
