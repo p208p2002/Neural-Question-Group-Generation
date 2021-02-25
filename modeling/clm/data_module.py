@@ -302,9 +302,9 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
         # self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
         # self.bos_tokens = [_GENERAL_LEVEL+" ",_GENERAL_LEVEL+" "]
-        self.bos_tokens = []
-        for i in range(20):
-            self.bos_tokens.append("$_[%d]"%i)
+        # self.bos_tokens = []
+        # for i in range(20):
+            # self.bos_tokens.append("$_[%d]"%i)
 
         # attr
         self.count_general_question = 0
@@ -324,7 +324,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             for all_question in all_questions:
                 if all_question not in article_spec_questions:
                     general_questions.append(all_question)   
-            if len(general_questions) == 0: continue; # keep only g-type >0
+            # if len(general_questions) == 0: continue; # keep only g-type >0
 
             data['general_questions'] = general_questions
             self.all_general_questions+=general_questions
@@ -336,7 +336,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
     def __getitem__(self,index):
         self.bos_tokens = []
-        for i in range(20):
+        for i in range(40):
             self.bos_tokens.append("_$[%d]"%(i))
 
         data = self.datas[index]
