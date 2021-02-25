@@ -137,7 +137,8 @@ class Model(pl.LightningModule):
         if args.dev: print(decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-        decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
+        if self.tokenizer.bos_token is not None:
+            decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
         decode_questions = decode_questions.strip()
         decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
         
