@@ -125,11 +125,11 @@ class UtilsMixin():
     def prepare_input(self,context,label=None):
         tokenizer = self.tokenizer
         pad_token_id = tokenizer.pad_token_id
-        input_encodings = tokenizer(context, pad_to_max_length=True, max_length=self.max_length, truncation=True, add_special_tokens=False)
+        input_encodings = tokenizer(context, padding='max_length' if label is not None else False, max_length=self.max_length, truncation=True, add_special_tokens=False)
         
         if label is not None:
             labels = []
-            target_encodings = tokenizer(label, pad_to_max_length=True, max_length=self.max_length, truncation=True, add_special_tokens=False)
+            target_encodings = tokenizer(label, padding='max_length', max_length=self.max_length, truncation=True, add_special_tokens=False)
             for target_encoding_id in target_encodings['input_ids']:
                 if target_encoding_id != pad_token_id:
                     labels.append(target_encoding_id)
@@ -337,7 +337,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
     def __getitem__(self,index):
         self.bos_tokens = []
         for i in range(20):
-            self.bos_tokens.append("_$[%d]"%i)
+            self.bos_tokens.append("_$[%d]"%(i))
 
         data = self.datas[index]
         context = data['article']

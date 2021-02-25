@@ -7,6 +7,7 @@ import re
 import os
 import json
 from .config import *
+from utils import compute_coverage_score
 args = get_args()
 
 def _parse_question(question):
@@ -76,18 +77,23 @@ class Model(pl.LightningModule):
         hyp = hyp.strip().replace("\n","")
         if hyp == '': hyp = '#'
 
-        #
         refs = refs[:]
         refs = [ref.strip().replace("\n","") for ref in refs]
         for ref in refs[:]:
             if ref == '': refs.remove(ref)
         if len(refs) == 0: refs.append("@")
-            
+
+
+        # token scores    
         score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
         
         del score['CIDEr']
+
+        # bert score
         bP, bR, bF1 = self.bert_scorer.score([hyp], [refs])
         score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
+
+
         for k in score.keys(): score[k] = str(score[k])
 
         return score
@@ -119,8 +125,8 @@ class Model(pl.LightningModule):
             # num_beams=3,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences,
-            bos_token_id=self.model.config.decoder_start_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
+            # bos_token_id=self.model.config.decoder_start_token_id,
+            # eos_token_id=self.tokenizer.eos_token_id,
             # pad_token_id=self.tokenizer.pad_token_id
         )
 
@@ -128,6 +134,7 @@ class Model(pl.LightningModule):
         assert len(sample_outputs) == num_return_sequences # 1
         sample_output = sample_outputs[0]        
         decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
+        if args.dev: print(decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
         decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
@@ -186,6 +193,9 @@ class Model(pl.LightningModule):
             labels.pop(i)
             score = self.compute_score(hyp=label, refs=labels)
             output['unlike_label_scores'].append(score)
+
+        output['question_coverage_score'] = compute_coverage_score(output['questions'],output['article'])
+        output['label_coverage_score'] = compute_coverage_score(output['labels'],output['article'])
 
         # log
         log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir

@@ -113,20 +113,32 @@ def print_global_info(predict_dataset,use_like_score):
             f_s = "{:<20}".format(format_float(round((scores[dataset_name][score_key]/gen_question_count[dataset_name])*100,6)))
             format_value+=f_s
         print(format_value,end='\n\n')
-    
-    print('-'*10,'label classmate smilarity','-'*10)
-    for dataset_name in dataset_names:
-        print(dataset_name)
-        print(foramt_col_names)
-        format_value = ''
-        for score_key in classmate_scores[dataset_name].keys():
-            f_s = "{:<20}".format(format_float(round((classmate_scores[dataset_name][score_key]/label_question_count[dataset_name])*100,6)))
-            format_value+=f_s
-        print(format_value,end='\n\n')
+
+    if not use_like_score:
+        print('-'*10,'label classmate smilarity','-'*10)
+        for dataset_name in dataset_names:
+            print(dataset_name)
+            print(foramt_col_names)
+            format_value = ''
+            for score_key in classmate_scores[dataset_name].keys():
+                f_s = "{:<20}".format(format_float(round((classmate_scores[dataset_name][score_key]/label_question_count[dataset_name])*100,6)))
+                format_value+=f_s
+            print(format_value,end='\n\n')
 
     print("datasets:",dataset_names)
     print("generate questions:",gen_question_count)
     print("label questions:",label_question_count)
+    print()
+
+    total_question_coverage_score = 0
+    total_label_coverage_score = 0
+    for i in range(len(predict_dataset)):
+        total_question_coverage_score += predict_dataset[i]['question_coverage_score']
+        total_label_coverage_score += predict_dataset[i]['label_coverage_score']
+    
+    print('avg_question_coverage_score',round(total_question_coverage_score/gen_question_count['all']*100,5))
+    print('avg_label_coverage_score',round(total_label_coverage_score/label_question_count['all']*100,5))
+        
 
     print(end='\n\n')
     print("exit:(q) or (o)")
@@ -161,7 +173,9 @@ if __name__ == "__main__":
         print (u"{}[2J{}[;H".format(chr(27), chr(27)))
         print("index:",current_index,"context:",len(context),"shift:",_shift_count,"(h)elp")
         print('dataset_name:',dataset_name,'(u)se_like_score:',use_like_score,end='\n\n')
-    
+        print('question_coverage_score:',round(predict_dataset[current_index]['question_coverage_score']*100,5))
+        print('label_coverage_score:',round(predict_dataset[current_index]['label_coverage_score']*100,5),end='\n\n')
+
         # Predicts
         predict_questions_and_scores = []
         qs = predict_dataset[current_index]['questions']
