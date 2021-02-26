@@ -148,7 +148,7 @@ if __name__ == "__main__":
     # config
     args = get_args()
     context = ''
-    max_display = 800
+    max_display = 2000
     shift_step = 100
     current_index = 0
     max_question_len = 100
