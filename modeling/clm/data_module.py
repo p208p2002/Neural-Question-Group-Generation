@@ -16,53 +16,7 @@ class DataModule(pl.LightningDataModule):
         self.args = args
     
     def get_dataset(self,stage,d_name):
-         # set race dataset
-        if d_name == 'race':
-            train_dataset = ConcatDataset((RaceDataset('train','all'),RaceDataset('dev','all')))
-            if stage == 'fit':
-                test_dataset = RaceDataset('test','all',eval_input=False)
-            elif stage == 'test':
-                test_dataset = RaceDataset('test','all',eval_input=True)
-        
-        # set eqg dataset
-        elif d_name == 'eqg':
-            train_dataset = ConcatDataset((
-                    EQGRaceDataset('train','middle'),
-                    EQGRaceDataset('train','high'),
-                    EQGRaceDataset('dev','middle'),
-                    EQGRaceDataset('dev','high')
-            ))
-            if stage == 'fit':
-                test_dataset = ConcatDataset((
-                    EQGRaceDataset('test','middle',eval_input=False),
-                    EQGRaceDataset('test','high',eval_input=False)
-                ))
-            elif stage == 'test':
-                test_dataset = ConcatDataset((
-                    EQGRaceDataset('test','middle',eval_input=True),
-                    EQGRaceDataset('test','high',eval_input=True)
-                ))
-        
-        # set general race
-        elif d_name == 'g_race':
-            train_dataset = ConcatDataset((
-                    GeneralRaceDataset('train','middle'),
-                    GeneralRaceDataset('train','high'),
-                    GeneralRaceDataset('dev','middle'),
-                    GeneralRaceDataset('dev','high')
-            ))
-            if stage == 'fit':
-                test_dataset = ConcatDataset((
-                    GeneralRaceDataset('test','middle',eval_input=False),
-                    GeneralRaceDataset('test','high',eval_input=False)
-                ))
-            elif stage == 'test':
-                test_dataset = ConcatDataset((
-                    GeneralRaceDataset('test','middle',eval_input=True),
-                    GeneralRaceDataset('test','high',eval_input=True)
-                ))
-        
-        elif d_name == 'm_race':
+        if d_name == 'm_race':
             train_dataset = ConcatDataset((
                     MergeRaceDataset('train','middle'),
                     MergeRaceDataset('train','high'),
@@ -162,139 +116,8 @@ class UtilsMixin():
         """
         return dataset_name,input_ids,attention_mask,label_questions,article
 
-# class RaceDataset(Dataset,UtilsMixin):
-#     def __init__(self,split_set,level,dataset_dir='datasets/RACE',eval_input=False):
-#         super().__init__()
-#         assert split_set in ['dev','test','train']
-#         assert level in ['all','middle','high']
-#         self.all_file_paths = []
-#         for root, dirs, files in os.walk(os.path.join(dataset_dir,split_set)):
-#             for f in files:
-#                 if level == 'all':
-#                     self.all_file_paths.append(os.path.join(root,f))
-#                 elif root == os.path.join(dataset_dir,split_set,level):
-#                     self.all_file_paths.append(os.path.join(root,f))
-
-#         #
-#         self.set_config(dataset_name='race',eval_input=eval_input, bos_token=RACE_BOS)
-            
-#     def __getitem__(self,index):
-#         with open(self.all_file_paths[index],'r',encoding='utf-8') as f:
-#             data = json.load(f)
-#             context = data['article']
-#             _questions = data['questions'][:]
-#             questions = []
-#             for _q in _questions:
-#                 if _q[-1] == '?' and re.search('_',_q) is None: # keep only type is question
-#                     questions.append(_q)
-            
-#             questions.append(self.tokenizer.eos_token)
-#             label = self.sep_token.join(questions) 
-
-#             if not self.eval_input:
-#                 model_input = self.prepare_input(context + self.bos_token, label= label)
-#                 return model_input['input_ids'],model_input['labels']
-#             else:
-#                 model_input = self.prepare_input(context + self.bos_token, label= None)
-#                 return self.construct_eval_output(
-#                     self.dataset_name,
-#                     model_input['input_ids'],
-#                     questions[:-1],
-#                     data['article']
-#                 )
-            
-#     def __len__(self):
-#         return len(self.all_file_paths)
-
-# class EQGRaceDataset(Dataset,UtilsMixin):
-#     def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
-#         self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
-#         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
-
-#         # config
-#         self.set_config(dataset_name='eqg',eval_input=eval_input,bos_token=RACE_BOS)
-
-#         # filter no question
-#         new_data = []
-#         for index in range(len(self.data_lines)):
-#             data = json.loads(self.data_lines[index])
-#             questions = data['article_spec_questions']
-#             if len(questions) > 0:
-#                 new_data.append(self.data_lines[index])
-#         self.data_lines = new_data
-
-#     def __getitem__(self,index):
-#         data = json.loads(self.data_lines[index])
-#         context = data['article']
-#         questions = data['article_spec_questions'][:]
-#         questions.append(self.tokenizer.eos_token)
-#         label = self.sep_token.join(questions) 
-
-#         if not self.eval_input:
-#             model_input = self.prepare_input(context + self.bos_token, label= label)
-#             return model_input['input_ids'],model_input['labels']
-#         else:
-#             model_input = self.prepare_input(context + self.bos_token, label= None)
-#             return self.construct_eval_output(
-#                 self.dataset_name,
-#                 model_input['input_ids'],
-#                 data['article_spec_questions'],
-#                 data['article']
-#             )
-    
-#     def __len__(self):
-#         return len(self.data_lines)
-
-# class GeneralRaceDataset(Dataset,UtilsMixin):
-#     def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
-#         self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
-#         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
-
-#         # config
-#         self.set_config(dataset_name='g_race',eval_input=eval_input,bos_token=_GENERAL_LEVEL)        
-
-#         # keep only general question
-#         new_datas = []
-#         for data_line in self.data_lines:
-#             data = json.loads(data_line)
-#             article_spec_questions = data['article_spec_questions'][:]
-#             all_questions = data['questions'][:]
-
-#             general_questions = []
-#             for all_question in all_questions:
-#                 if all_question not in article_spec_questions:
-#                     general_questions.append(all_question)
-#             if len(general_questions) >0: # remove no question
-#                 data['general_questions'] = general_questions
-#                 new_datas.append(data)
-#         self.datas = new_datas
-
-#     def __getitem__(self,index):
-#         data = self.datas[index]
-#         context = data['article']
-#         general_questions = data['general_questions'][:]
-
-#         #
-#         general_questions.append(self.tokenizer.eos_token)
-#         label = self.sep_token.join(general_questions) 
-
-#         if not self.eval_input:
-#             model_input = self.prepare_input(context + self.bos_token, label= label)
-#             return model_input['input_ids'],model_input['labels']
-#         else:
-#             model_input = self.prepare_input(context + self.bos_token, label= None)
-#             return self.construct_eval_output(
-#                 self.dataset_name,
-#                 model_input['input_ids'],
-#                 data['general_questions'],
-#                 data['article']
-#             )
-    
-#     def __len__(self):
-#         return len(self.datas)
-
 class MergeRaceDataset(Dataset,UtilsMixin):
-    def __init__(self,split_set,level,dataset_dir='datasets/merge-race',eval_input=False):
+    def __init__(self,split_set,level,dataset_dir='datasets/EQG-RACE-PLUS',eval_input=False):
         self.file_path  = os.path.join(dataset_dir,split_set,level+'.jsonl')
         self.data_lines = open(self.file_path,'r',encoding='utf-8').readlines()
 
@@ -306,57 +129,50 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         # for i in range(20):
             # self.bos_tokens.append("$_[%d]"%i)
 
-        # attr
-        self.count_general_question = 0
-        self.count_article_spec_question = 0
+        
 
         # select general question
         self.all_general_questions = []
         new_datas = []
         for data_line in self.data_lines:
             data = json.loads(data_line)
-            article_spec_questions = data['article_spec_questions'][:]
-            if len(article_spec_questions) == 0: continue; # keep only s-type >0
-            all_questions = data['questions'][:]
-            # if len(all_questions) == 0: continue
+            article_spec_questions = data['specific_questions'][:]
+            cloze_questions = data['cloze_questions'][:]
+            if len(article_spec_questions) == 0 and len(cloze_questions) == 0: 
+                continue
             
-            general_questions = []
-            for all_question in all_questions:
-                if all_question not in article_spec_questions:
-                    general_questions.append(all_question)   
-            # if len(general_questions) == 0: continue; # keep only g-type >0
-
-            data['general_questions'] = general_questions
-            self.all_general_questions+=general_questions
+            # data['general_questions']
+            
             new_datas.append(data)
         self.datas = new_datas
     
-    def random_general_question(self):
-        return self.all_general_questions[random.randint(0,len(self.all_general_questions)-1)]
 
     def __getitem__(self,index):
         self.bos_tokens = []
         for i in range(40):
-            self.bos_tokens.append("_$[%d]"%(i))
+            self.bos_tokens.append("_$[%d]"%(0))
 
         data = self.datas[index]
         context = data['article']
+        article_spec_questions = data['specific_questions']
+        cloze_questions = data['cloze_questions']
 
-        general_questions = data['general_questions'][:]
-        self.count_general_question += len(general_questions)
+
+        # general_questions = data['general_questions'][:]
+        
         # general_questions = [self.bos_tokens[0]+ q for q in general_questions]
         # random.shuffle(general_questions)
         # general_questions = [self.bos_tokens.pop(0)+ q for q in general_questions]
 
-        article_spec_questions = data['article_spec_questions'][:]
-        self.count_article_spec_question += len(article_spec_questions)
+        # article_spec_questions = data['article_spec_questions'][:]
+        
         # article_spec_questions = [self.bos_tokens[1]+ q for q in article_spec_questions]
         # random.shuffle(article_spec_questions)
         # article_spec_questions = [self.bos_tokens.pop(0)+ q for q in article_spec_questions]
 
         # all_questions_with_bos = general_questions[:1] + article_spec_questions[:1]
         # all_questions_with_bos = general_questions[:0] + article_spec_questions[:]
-        all_questions_with_bos = general_questions + article_spec_questions
+        all_questions_with_bos = article_spec_questions + cloze_questions
 
         random.shuffle(all_questions_with_bos)
         all_questions_with_bos = [self.bos_tokens.pop(0)+ q for q in all_questions_with_bos]
@@ -372,8 +188,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 self.dataset_name,
                 model_input['input_ids'],
                 model_input['attention_mask'],
-                data['general_questions'] + data['article_spec_questions'],
-                # data['article_spec_questions'],
+                data['specific_questions']+data['cloze_questions'],
                 data['article']
             )
     

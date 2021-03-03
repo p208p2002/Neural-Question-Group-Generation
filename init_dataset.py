@@ -7,15 +7,9 @@ def download_from_gd(gid,save_name,save_dir = 'datasets'):
 
 if __name__ == "__main__":
     os.system('rm -rf datasets/')
-
-    # RACE
-    download_from_gd('1Lwhx5jhPGC-ekCn0E1wrOKJmX-AwTXuD','RACE.tar.gz')
-    os.system('tar zxvf datasets/RACE.tar.gz')
-    os.system('mv RACE datasets/')
-
-    # EQG-RACE
-    download_from_gd('1P42kHHTwzEzVUZ9t5T9A727ZzpWT8Hk-','EQG-RACE.tar.gz')
-    os.system('tar zxvf datasets/EQG-RACE.tar.gz')
-    os.system('mv key-race datasets/EQG-RACE')
+    # EQG-RACE-PLUS
+    download_from_gd('1wXGyEjzwDpvG1TCv6C8JfUwDJmOiBwOr','EQG-RACE-PLUS.zip')
+    os.system('unzip datasets/EQG-RACE-PLUS.zip -d datasets')
+    
 
     
