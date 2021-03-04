@@ -138,7 +138,9 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             data = json.loads(data_line)
             article_spec_questions = data['specific_questions'][:]
             cloze_questions = data['cloze_questions'][:]
-            if len(article_spec_questions) == 0 and len(cloze_questions) == 0: 
+            # if len(article_spec_questions) == 0 and len(cloze_questions) == 0: 
+            #     continue
+            if len(article_spec_questions) == 0: 
                 continue
             
             # data['general_questions']
@@ -150,7 +152,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
     def __getitem__(self,index):
         self.bos_tokens = []
         for i in range(40):
-            self.bos_tokens.append("_$[%d]"%(0))
+            self.bos_tokens.append("_$[%d]"%(i))
 
         data = self.datas[index]
         context = data['article']
