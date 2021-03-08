@@ -97,7 +97,43 @@ class Model(pl.LightningModule):
         for k in score.keys(): score[k] = str(score[k])
 
         return score
+    
+    def feedback_generation(self, input_ids, feedback_times = 3):
+        outputs = []
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        #
+        input_ids = input_ids.squeeze(0).tolist()        
+        gen_ids = None
 
+        for i in range(feedback_times):
+            if gen_ids is not None:
+                input_ids += gen_ids
+            
+            sample_outputs = self.model.generate(
+                input_ids = torch.LongTensor(input_ids).unsqueeze(0).to(device),
+                attention_mask=torch.LongTensor([1]*len(input_ids)).unsqueeze(0).to(device),
+                max_length=MAX_LENGTH,
+                early_stopping=True,
+                temperature=0.85,
+                do_sample=True,
+                top_p=0.9,
+                num_beams=3,
+                no_repeat_ngram_size=5,
+                num_return_sequences=1,
+            )
+            sample_output = sample_outputs[0]        
+            decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
+            decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
+            decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
+            if self.tokenizer.bos_token is not None:
+                decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
+            decode_questions = decode_questions.strip()
+            decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
+            if args.dev: print(decode_questions)
+            gen_ids = self.tokenizer("_$[0]"+decode_questions, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)['input_ids']
+            outputs.append(decode_questions[3:])
+        return outputs
+        
     
     def test_step(self, batch, batch_idx):
         # tensor
@@ -108,68 +144,20 @@ class Model(pl.LightningModule):
         label_questions = batch[3]
         article = batch[4]
 
-        input_ids_len = input_ids.shape[-1]
         batch_size = input_ids.shape[0]
         assert batch_size == 1
 
-        num_return_sequences = 1
-        sample_outputs = self.model.generate(
-            input_ids = input_ids,
-            attention_mask=attention_mask,
-            max_length=MAX_LENGTH,
-            early_stopping=True,
-            temperature=0.85,
-            do_sample=True,
-            top_p=0.9,
-            # top_k=12,
-            num_beams=3,
-            no_repeat_ngram_size=5,
-            num_return_sequences=num_return_sequences,
-            # bos_token_id=self.model.config.decoder_start_token_id,
-            # eos_token_id=self.tokenizer.eos_token_id,
-            # pad_token_id=self.tokenizer.pad_token_id
-        )
-
-
-        assert len(sample_outputs) == num_return_sequences # 1
-        sample_output = sample_outputs[0]        
-        decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
-        if args.dev: print(decode_questions)
-        decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
-        decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-        if self.tokenizer.bos_token is not None:
-            decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
-        decode_questions = decode_questions.strip()
-        decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
+        decode_questions = self.feedback_generation(input_ids)
         
-        if 'm_race' in args.datasets:
-            decode_questions = decode_questions.split('_$')
-            new_decode_questions = []
-            levels = []
-            for decode_question in decode_questions:
-                level,question = _parse_question(decode_question)
-                if question =="": continue
-                new_decode_questions.append(question)
-                levels.append(level)
-            decode_questions = new_decode_questions
-        else:
-            decode_questions = decode_questions.split(self.tokenizer.sep_token)
-
-        # if len(decode_questions) >0 and decode_questions[-1] == self.tokenizer.eos_token:
-        #     decode_questions.pop(-1)
-        # print(len(decode_questions))
-
         output =  {
             'batch_idx':batch_idx,
             'dataset_name':dataset_name,
             'questions':decode_questions,
             'labels':[_q[0] for _q in label_questions],
-            'article':article[0]
+            'article':article[0],
+            'levels': ['[0]']*len(decode_questions)
         }
 
-        if 'm_race' in args.datasets:            
-            output['levels'] = levels
-        
 
         # add score
         output['question_scores'] = []

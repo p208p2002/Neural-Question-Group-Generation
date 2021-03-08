@@ -14,7 +14,7 @@ if __name__ == "__main__":
         accelerator=ACCELERATOR,
         fast_dev_run=args.dev,
         precision=32,
-        default_root_dir='.log_clm',
+        default_root_dir='.log_feedback',
         max_epochs=args.epoch,
         callbacks=[
             EarlyStopping(monitor='dev_loss',patience=2),

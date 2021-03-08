@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader,Dataset,ConcatDataset
 import os
 import json
-from .tokenizer import get_tokenizer,RACE_BOS,_GENERAL_LEVEL,_MIDDLE_LEVEL
+from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
 import pytorch_lightning as pl
@@ -123,13 +123,6 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
-        # self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
-        # self.bos_tokens = [_GENERAL_LEVEL+" ",_GENERAL_LEVEL+" "]
-        # self.bos_tokens = []
-        # for i in range(20):
-            # self.bos_tokens.append("$_[%d]"%i)
-
-        
 
         # select general question
         self.all_general_questions = []
@@ -142,8 +135,6 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             #     continue
             if len(article_spec_questions) == 0: 
                 continue
-            
-            # data['general_questions']
             
             new_datas.append(data)
         self.datas = new_datas
