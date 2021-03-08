@@ -39,18 +39,12 @@ class Model(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
-        if args.base_model == 'transfo-xl-wt103':
-            loss = outputs['losses'].mean()
-        else:
-            loss = outputs['loss']
+        loss = outputs['loss']
         return loss
     
     def validation_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
-        if args.base_model == 'transfo-xl-wt103':
-            loss = outputs['losses'].mean()
-        else:
-            loss = outputs['loss']
+        loss = outputs['loss']
         self.log('dev_loss',loss)
     
     def on_test_epoch_start(self):
@@ -117,6 +111,7 @@ class Model(pl.LightningModule):
                 temperature=0.85,
                 do_sample=True,
                 top_p=0.9,
+                top_k=10,
                 num_beams=3,
                 no_repeat_ngram_size=5,
                 num_return_sequences=1,

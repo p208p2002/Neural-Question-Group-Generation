@@ -169,12 +169,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         all_questions_with_bos = all_questions_with_bos[:random_state_rage]
 
         #
-        # all_questions_with_bos.append(self.tokenizer.eos_token)
         context += ' '.join(all_questions_with_bos)
         label = question_for_label + self.tokenizer.eos_token
-
-        # print(all_questions_with_bos)
-        # print(label)
 
         if not self.eval_input: # train
             model_input = self.prepare_input(context, label= label)
@@ -187,7 +183,6 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 model_input['attention_mask'],
                 data['specific_questions']+data['cloze_questions'],
                 context
-                # data['article']
             )
     
     def __len__(self):
