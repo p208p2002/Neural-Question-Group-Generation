@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from transformers import AutoModelForSeq2SeqLM
+from custom_transformers.src.transformers import BartForConditionalGeneration
 from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
@@ -8,64 +8,11 @@ import os
 import json
 from .config import *
 from utils import compute_coverage_score
+
+
 args = get_args()
 
-def _parse_question(question):
-    """
-    Args:
-        question: str
-    Return:
-        level,question
-    """
-    level = None
-    try:
-        level = re.match("\\[.*\\]",question).group()
-    except:
-        pass
-    
-    if level is not None:
-        question = question.replace(level,"")
-    return level,question
-
-class Model(pl.LightningModule):
-    def __init__(self):
-        super().__init__()
-        self.tokenizer = get_tokenizer()
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(args.base_model)
-        self.model.resize_token_embeddings(len(self.tokenizer))
-
-    def forward(self, input_ids,attention_mask,labels=None):
-        return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
-    
-    def training_step(self, batch, batch_idx):
-        outputs = self(batch[0],batch[1],batch[2])
-        loss = outputs['loss']
-        return loss
-    
-    def validation_step(self, batch, batch_idx):
-        outputs = self(batch[0],batch[1],batch[2])
-        loss = outputs['loss']
-        self.log('dev_loss',loss)
-    
-    def on_test_epoch_start(self):
-        #
-        print("loading NLGEval...",end="\r")
-        from nlgeval import NLGEval
-        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True)  # loads the models
-        print("loading NLGEval...finish")
-
-        #
-        print("loading BERTScorer...",end="\r")
-        import logging,os
-        import transformers
-        os.environ["TOKENIZERS_PARALLELISM"] = 'true'
-        transformers.tokenization_utils.logger.setLevel(logging.ERROR)
-        transformers.configuration_utils.logger.setLevel(logging.ERROR)
-        transformers.modeling_utils.logger.setLevel(logging.ERROR)
-        from bert_score import BERTScorer
-        self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
-        print("loading BERTScorer...finish")
-    
+class CustomMixin():
     def compute_score(self,hyp,refs):
         #
         hyp = hyp.strip().replace("\n","")
@@ -101,7 +48,8 @@ class Model(pl.LightningModule):
 
         for i in range(feedback_times):
             if gen_ids is not None:
-                input_ids += gen_ids
+                input_ids = gen_ids + input_ids
+                input_ids = input_ids[:MAX_LENGTH]
             
             sample_outputs = self.model.generate(
                 input_ids = torch.LongTensor(input_ids).unsqueeze(0).to(device),
@@ -128,8 +76,65 @@ class Model(pl.LightningModule):
             gen_ids = self.tokenizer("_$[0]"+decode_questions, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)['input_ids']
             outputs.append(decode_questions[3:])
         return outputs
-        
+
+def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
+    """
+    Shift input ids one token to the right.
+    """
+    shifted_input_ids = input_ids.new_zeros(input_ids.shape)
+    shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
+    shifted_input_ids[:, 0] = decoder_start_token_id
+
+    assert pad_token_id is not None, "self.model.config.pad_token_id has to be defined."
+    # replace possible -100 values in labels by `pad_token_id`
+    shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
+
+    return shifted_input_ids
+
+class Model(pl.LightningModule,CustomMixin):
+    def __init__(self):
+        super().__init__()
+        self.tokenizer = get_tokenizer()
+        self.model = BartForConditionalGeneration.from_pretrained(args.base_model)
+        self.model.resize_token_embeddings(len(self.tokenizer))
+
+    def forward(self, input_ids,attention_mask,labels=None):
+        return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
     
+    def training_step(self, batch, batch_idx):
+        outputs = self.model(
+            input_ids = batch[0],
+            attention_mask = batch[1],
+            labels = batch[2],
+            negative_sample_ids = batch[3]
+            )
+        loss = outputs['loss']
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        outputs = self(batch[0],batch[1],batch[2])
+        loss = outputs['loss']
+        self.log('dev_loss',loss)
+    
+    def on_test_epoch_start(self):
+        #
+        print("loading NLGEval...",end="\r")
+        from nlgeval import NLGEval
+        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True)  # loads the models
+        print("loading NLGEval...finish")
+
+        #
+        print("loading BERTScorer...",end="\r")
+        import logging,os
+        import transformers
+        os.environ["TOKENIZERS_PARALLELISM"] = 'true'
+        transformers.tokenization_utils.logger.setLevel(logging.ERROR)
+        transformers.configuration_utils.logger.setLevel(logging.ERROR)
+        transformers.modeling_utils.logger.setLevel(logging.ERROR)
+        from bert_score import BERTScorer
+        self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
+        print("loading BERTScorer...finish")
+
     def test_step(self, batch, batch_idx):
         # tensor
         dataset_name = batch[0][0]

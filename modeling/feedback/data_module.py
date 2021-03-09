@@ -149,7 +149,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         context = data['article']
         article_spec_questions = data['specific_questions']
         cloze_questions = data['cloze_questions']
-
+        # general_questions = data['general_questions']
 
         all_questions_with_bos = article_spec_questions + cloze_questions
         random.shuffle(all_questions_with_bos)
@@ -169,12 +169,22 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         all_questions_with_bos = all_questions_with_bos[:random_state_rage]
 
         #
-        context += ' '.join(all_questions_with_bos)
-        label = question_for_label + self.tokenizer.eos_token
-
         if not self.eval_input: # train
+            context = ' '.join(all_questions_with_bos) + context
+            label = question_for_label + self.tokenizer.eos_token
+
+            #
             model_input = self.prepare_input(context, label= label)
-            return model_input['input_ids'],model_input['attention_mask'],model_input['labels']
+
+            # random select for negative
+            if len(all_questions_with_bos)>0:
+                random.shuffle(all_questions_with_bos)
+                negative_sample_label = all_questions_with_bos.pop(0) + self.tokenizer.eos_token
+                model_input['negative_sample_ids'] = self.prepare_input(context, label= negative_sample_label)['labels']
+            else:
+                model_input['negative_sample_ids'] = torch.LongTensor([-100]*len(model_input['labels']))
+            
+            return model_input['input_ids'],model_input['attention_mask'],model_input['labels'],model_input['negative_sample_ids']
         else:
             model_input = self.prepare_input(context, label= None)
             return self.construct_eval_output(

@@ -5,3 +5,4 @@ test.py
 .log_*/
 datasets.b
 .backups
+custom_transformers
