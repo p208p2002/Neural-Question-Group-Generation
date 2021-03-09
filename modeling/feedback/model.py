@@ -69,6 +69,7 @@ class CustomMixin():
             decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
             decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
+            decode_questions = decode_questions.replace("^%","")
             if self.tokenizer.bos_token is not None:
                 decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
             decode_questions = decode_questions.strip()

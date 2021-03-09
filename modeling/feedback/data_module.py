@@ -165,14 +165,14 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         #
         if not self.eval_input: # train
             context = self.sep_token + self.sep_token.join(all_questions) + context            
-            label = question_for_label + self.tokenizer.eos_token
+            label = "^%" + question_for_label + self.tokenizer.eos_token
             #
             model_input = self.prepare_input(context, label= label)
 
             # random select for negative
             if len(all_questions)>0:
                 random.shuffle(all_questions)
-                negative_sample_label = all_questions.pop(0)
+                negative_sample_label = self.tokenizer.pad_token + self.tokenizer.pad_token + all_questions.pop(0) + self.tokenizer.pad_token
                 model_input['negative_sample_ids'] = self.prepare_input(context, label= negative_sample_label)['labels']
             else:
                 model_input['negative_sample_ids'] = torch.LongTensor([-100]*len(model_input['labels']))
