@@ -123,6 +123,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
+        self.sep_token = self.tokenizer.sep_token
 
         # select general question
         self.all_general_questions = []
@@ -138,50 +139,40 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             
             new_datas.append(data)
         self.datas = new_datas
-    
+
 
     def __getitem__(self,index):
-        self.bos_tokens = []
-        for i in range(40):
-            self.bos_tokens.append("_$[%d]"%(0))
-
         data = self.datas[index]
         context = data['article']
         article_spec_questions = data['specific_questions']
         cloze_questions = data['cloze_questions']
-        # general_questions = data['general_questions']
 
-        all_questions_with_bos = article_spec_questions + cloze_questions
-        random.shuffle(all_questions_with_bos)
-        all_questions_with_bos = [self.bos_tokens.pop(0)+ q for q in all_questions_with_bos]
+        all_questions = article_spec_questions + cloze_questions
+        random.shuffle(all_questions)
 
-        random_select_question_for_label = random.randint(0,len(all_questions_with_bos)-1)
-        
-        # only one for decoder to gen
-        question_for_label = all_questions_with_bos.pop(random_select_question_for_label)
+        # 
+        random_select_question_for_label = random.randint(0,len(all_questions)-1)        
+        question_for_label = all_questions.pop(random_select_question_for_label)
 
         # we random select for state
         try:
-            random_state_rage = random.randint(0,len(all_questions_with_bos)-1)
+            random_state_rage = random.randint(0,len(all_questions)-1)
         except:
             random_state_rage = 0
         
-        all_questions_with_bos = all_questions_with_bos[:random_state_rage]
+        all_questions = all_questions[:random_state_rage]
 
         #
         if not self.eval_input: # train
-            context = ' '.join(all_questions_with_bos) + context
+            context = self.sep_token + self.sep_token.join(all_questions) + context            
             label = question_for_label + self.tokenizer.eos_token
-
             #
             model_input = self.prepare_input(context, label= label)
 
             # random select for negative
-            if len(all_questions_with_bos)>0:
-                random.shuffle(all_questions_with_bos)
-                negative_sample_label = all_questions_with_bos.pop(0) + self.tokenizer.eos_token
-                negative_sample_label = negative_sample_label[5:] # 1215, 1629, 10975, 288, 742
-                negative_sample_label = "".join([self.tokenizer.pad_token]*5)+negative_sample_label
+            if len(all_questions)>0:
+                random.shuffle(all_questions)
+                negative_sample_label = all_questions.pop(0)
                 model_input['negative_sample_ids'] = self.prepare_input(context, label= negative_sample_label)['labels']
             else:
                 model_input['negative_sample_ids'] = torch.LongTensor([-100]*len(model_input['labels']))
