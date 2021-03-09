@@ -2,13 +2,6 @@ from transformers import AutoTokenizer
 from .argparser import get_args
 import torch
 
-# _GENERAL_LEVEL = '_$[GENERAL]'
-# _EASY_LEVEL = '_$[SHALLOW]'
-# _MIDDLE_LEVEL = '_$[MEDIUM]'
-# _HIGH_LEVEL = '_$[DEEP]'
-
-# RACE_BOS = _MIDDLE_LEVEL
-
 def get_tokenizer(args = get_args()):
     if 'tokenizer' not in globals():
         global tokenizer
