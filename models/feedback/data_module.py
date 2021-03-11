@@ -182,7 +182,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         #
         if not self.eval_input: # train
-            context = self.sep_token + self.sep_token.join(all_questions) + context            
+            context =  self.sep_token.join(all_questions) + self.sep_token + context            
             label = WARN_UP_TOKEN + question_for_label + self.tokenizer.eos_token
             model_input = self.prepare_input(context, label= label)
 

@@ -74,7 +74,7 @@ class CustomMixin():
                 decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
             decode_questions = decode_questions.strip()
             if args.dev: print(decode_questions)
-            gen_ids = self.tokenizer(self.tokenizer.sep_token + decode_questions, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)['input_ids']
+            gen_ids = self.tokenizer(decode_questions + self.tokenizer.sep_token, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)['input_ids']
             outputs.append(decode_questions)
         return outputs
 
