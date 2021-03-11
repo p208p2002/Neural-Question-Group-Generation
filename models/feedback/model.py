@@ -75,7 +75,7 @@ class CustomMixin():
             decode_questions = decode_questions.strip()
             if args.dev: print(decode_questions)
             gen_ids = self.tokenizer(self.tokenizer.sep_token + decode_questions, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)['input_ids']
-            outputs.append(decode_questions[3:])
+            outputs.append(decode_questions)
         return outputs
 
 class Model(pl.LightningModule,CustomMixin):
@@ -105,11 +105,16 @@ class Model(pl.LightningModule,CustomMixin):
             )
         loss = outputs['loss']
 
+        labels = batch[2]
+        n_labels = batch[5]
+        # n_labels = torch.where(labels == n_labels,-100,n_labels)
+
         outputs = self(
             input_ids = batch[0],
             attention_mask = batch[1],
             decoder_input_ids = [4],
-            labels = batch[5],
+            labels = n_labels,
+            # labels = batch[5],
             use_negative_loss = True
             )
         n_loss = outputs['loss']
