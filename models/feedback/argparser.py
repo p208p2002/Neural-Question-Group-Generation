@@ -10,6 +10,7 @@ def get_args():
     parser.add_argument('--run_test',action='store_true')
     parser.add_argument('-fc','--from_checkpoint',type=str,default=None)
     parser.add_argument('-ds','--datasets',nargs='+',default=['m_race'],required=False)
+    parser.add_argument('-dnl','--disable_negative_loss',action='store_true')
     args = parser.parse_args()
 
     allow_datasets = ['m_race']

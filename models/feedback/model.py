@@ -103,23 +103,24 @@ class Model(pl.LightningModule,CustomMixin):
             labels = batch[3],
             use_negative_loss = False
             )
-        loss = outputs['loss']
+        loss = outputs['loss']        
 
-        labels = batch[2]
-        n_labels = batch[5]
-        # n_labels = torch.where(labels == n_labels,-100,n_labels)
+        if args.disable_negative_loss == False: # use negative_loss
+            labels = batch[2]
+            n_labels = batch[5]
+            n_labels = torch.where(labels == n_labels,-100,n_labels)
 
-        outputs = self(
-            input_ids = batch[0],
-            attention_mask = batch[1],
-            decoder_input_ids = [4],
-            labels = n_labels,
-            # labels = batch[5],
-            use_negative_loss = True
-            )
-        n_loss = outputs['loss']
+            outputs = self(
+                input_ids = batch[0],
+                attention_mask = batch[1],
+                decoder_input_ids = [4],
+                labels = n_labels,
+                use_negative_loss = True
+                )
+            n_loss = outputs['loss']
+            loss += n_loss
         
-        return loss + n_loss
+        return loss
     
     def validation_step(self, batch, batch_idx):
         loss = self.training_step(batch, batch_idx)
