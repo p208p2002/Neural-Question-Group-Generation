@@ -2,6 +2,8 @@ from transformers import AutoTokenizer
 from .argparser import get_args
 import torch
 
+GENED_TOKEN = '[GEN]'
+
 def get_tokenizer(args = get_args()):
     if 'tokenizer' not in globals():
         global tokenizer
@@ -20,7 +22,7 @@ def get_tokenizer(args = get_args()):
             if tokenizer.eos_token is None:
                 print('set eos_token...')
                 tokenizer.add_special_tokens({'eos_token': '[EOS]'})
-            # tokenizer.add_tokens([_GENERAL_LEVEL,_EASY_LEVEL,_MIDDLE_LEVEL,_HIGH_LEVEL],special_tokens=True)
+            tokenizer.add_tokens([GENED_TOKEN],special_tokens=True)
 
     return tokenizer
 

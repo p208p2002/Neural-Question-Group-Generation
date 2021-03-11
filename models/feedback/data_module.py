@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader,Dataset,ConcatDataset
 import os
 import json
-from .tokenizer import get_tokenizer
+from .tokenizer import get_tokenizer,GENED_TOKEN
 from .argparser import get_args
 import torch
 import pytorch_lightning as pl
@@ -101,7 +101,7 @@ class UtilsMixin():
                     if l_id in stop_word_ids:
                         labels[i] = -100
             # decoder input shift right    
-            decoder_input_ids = [2] + decoder_input_ids[:-1] # decoder_input_ids is `2` in BART
+            decoder_input_ids = [MODEL_CONFIG.decoder_start_token_id] + decoder_input_ids[:-1] # decoder_input_ids is `2` in BART
 
         else:
             labels = None
@@ -182,7 +182,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         #
         if not self.eval_input: # train
-            context =  self.sep_token.join(all_questions) + self.sep_token + context            
+            # context =  self.sep_token.join(all_questions) + self.sep_token + context
+            context = GENED_TOKEN +  self.sep_token.join(all_questions) + GENED_TOKEN + context
             label = WARN_UP_TOKEN + question_for_label + self.tokenizer.eos_token
             model_input = self.prepare_input(context, label= label)
 

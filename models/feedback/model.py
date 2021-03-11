@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 # from custom_transformers.src.transformers import BartForConditionalGeneration
 from .modeling_bart import CustomBartForConditionalGeneration
-from .tokenizer import get_tokenizer
+from .tokenizer import get_tokenizer,GENED_TOKEN
 from .argparser import get_args
 import torch
 import re
@@ -45,12 +45,14 @@ class CustomMixin():
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         #
         input_ids = input_ids.squeeze(0).tolist()        
-        gen_ids = None
+        # gen_ids = None
 
         for i in range(feedback_times):
-            if gen_ids is not None:
-                input_ids = gen_ids + input_ids
-                input_ids = input_ids[:MAX_LENGTH]
+            # if gen_ids is not None:
+            #     input_ids = gen_ids + input_ids
+            #     input_ids = input_ids[:MAX_LENGTH]
+            gened_ids = self.tokenizer(GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN,add_special_tokens=False)['input_ids']
+            input_ids = gened_ids + input_ids
             
             sample_outputs = self.model.generate(
                 input_ids = torch.LongTensor(input_ids).unsqueeze(0).to(device),
@@ -69,12 +71,12 @@ class CustomMixin():
             decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
             decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-            decode_questions = decode_questions.replace(WARN_UP_TOKEN,"")
+            if WARN_UP_TOKEN != "":
+                decode_questions = decode_questions.replace(WARN_UP_TOKEN,"")
             if self.tokenizer.bos_token is not None:
                 decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
             decode_questions = decode_questions.strip()
             if args.dev: print(decode_questions)
-            gen_ids = self.tokenizer(decode_questions + self.tokenizer.sep_token, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)['input_ids']
             outputs.append(decode_questions)
         return outputs
 
