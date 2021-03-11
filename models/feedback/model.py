@@ -117,7 +117,7 @@ class Model(pl.LightningModule,CustomMixin):
         return loss + n_loss
     
     def validation_step(self, batch, batch_idx):
-        outputs = self(input_ids = batch[0], attention_mask = batch[1], labels = batch[2])
+        outputs = self(input_ids = batch[0], attention_mask = batch[1], decoder_input_ids = [2], labels = batch[3], use_negative_loss = False)
         loss = outputs['loss']
         self.log('dev_loss',loss)
     
