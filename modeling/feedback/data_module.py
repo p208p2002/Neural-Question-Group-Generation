@@ -9,6 +9,7 @@ import re
 from .config import *
 import random
 from utils import make_stop_word_ids
+from transformers.models.bart.modeling_bart import shift_tokens_right
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -69,7 +70,6 @@ class UtilsMixin():
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
-
         self.max_length = max_length
 
         self.stop_word_ids = make_stop_word_ids(self.tokenizer)
@@ -86,29 +86,37 @@ class UtilsMixin():
         input_encodings = tokenizer(context, padding='max_length' if label is not None else False, max_length=self.max_length, truncation=True, add_special_tokens=False)
         
         if label is not None:
+            decoder_input_ids = []
             labels = []
             target_encodings = tokenizer(label, padding='max_length', max_length=self.max_length, truncation=True, add_special_tokens=False)
             for target_encoding_id in target_encodings['input_ids']:
+                decoder_input_ids.append(target_encoding_id)
                 if target_encoding_id != pad_token_id:
                     labels.append(target_encoding_id)
                 else:
-                    labels.append(-100)
+                    labels.append(-100) # ignore "pad token" in label
             #
-            if is_negative: # ignore head and eos (set to -100) 
+            if is_negative: # ignore head and eos for negative label (set to -100) 
                 for i,l_id in enumerate(labels):
                     if l_id in stop_word_ids:
                         labels[i] = -100
+            # decoder input shift right    
+            decoder_input_ids = [2] + decoder_input_ids[:-1] # decoder_input_ids is `2` in BART
 
         else:
             labels = None
-
+            decoder_input_ids = None
+        
         #   
         model_input = {
             'input_ids':input_encodings['input_ids'],
             'attention_mask':input_encodings['attention_mask'],
+            'decoder_input_ids': decoder_input_ids,
             'labels': labels
         }
-        if label is None: del model_input['labels']
+        if label is None: 
+            del model_input['labels']
+            del model_input['decoder_input_ids']
 
         # convert to tensor
         for key in model_input.keys():
@@ -175,19 +183,33 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         #
         if not self.eval_input: # train
             context = self.sep_token + self.sep_token.join(all_questions) + context            
-            label = "^%" + question_for_label + self.tokenizer.eos_token
-            #
+            label = WARN_UP_TOKEN + question_for_label + self.tokenizer.eos_token
             model_input = self.prepare_input(context, label= label)
 
             # random select for negative
             if len(all_questions)>0:
                 random.shuffle(all_questions)
-                negative_sample_label = "^%" + all_questions.pop(0) + self.tokenizer.eos_token
-                model_input['negative_sample_ids'] = self.prepare_input(context, label= negative_sample_label, is_negative = True)['labels']
+                negative_sample_label = WARN_UP_TOKEN + all_questions.pop(0) + self.tokenizer.eos_token
+                
+                negative_model_input = self.prepare_input(context, label= negative_sample_label, is_negative = True)
+
+                model_input['n_decoder_input_ids'] = negative_model_input['decoder_input_ids']
+                model_input['n_labels'] = negative_model_input['labels']
             else:
-                model_input['negative_sample_ids'] = torch.LongTensor([-100]*len(model_input['labels']))
+                model_input['n_decoder_input_ids'] = torch.LongTensor([self.tokenizer.pad_token_id]*len(model_input['labels']))
+                model_input['n_labels'] = torch.LongTensor([-100]*len(model_input['labels']))
             
-            return model_input['input_ids'],model_input['attention_mask'],model_input['labels'],model_input['negative_sample_ids']
+            return (
+                # context
+                model_input['input_ids'],
+                model_input['attention_mask'],
+                # possitive
+                model_input['decoder_input_ids'],
+                model_input['labels'],
+                # negative
+                model_input['n_decoder_input_ids'],
+                model_input['n_labels'],
+            )
         else:
             model_input = self.prepare_input(context, label= None)
             return self.construct_eval_output(

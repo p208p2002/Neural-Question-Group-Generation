@@ -4,3 +4,5 @@ _args = get_args()
 ACCELERATOR = 'dp'
 GPUS = -1
 MAX_LENGTH = 1024
+
+WARN_UP_TOKEN = "^%"

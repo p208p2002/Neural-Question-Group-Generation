@@ -69,7 +69,7 @@ class CustomMixin():
             decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
             decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-            decode_questions = decode_questions.replace("^%","")
+            decode_questions = decode_questions.replace(WARN_UP_TOKEN,"")
             if self.tokenizer.bos_token is not None:
                 decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
             decode_questions = decode_questions.strip()
@@ -85,21 +85,39 @@ class Model(pl.LightningModule,CustomMixin):
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
 
-    def forward(self, input_ids,attention_mask,labels=None,negative_sample_ids=None):
-        return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True,negative_sample_ids=negative_sample_ids)
+    def forward(self, input_ids,attention_mask,labels=None,use_negative_loss=False,decoder_input_ids=None):
+        return self.model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                decoder_input_ids = None,
+                labels=labels,
+                return_dict=True,
+                use_negative_loss=use_negative_loss
+            )
     
     def training_step(self, batch, batch_idx):
         outputs = self(
             input_ids = batch[0],
             attention_mask = batch[1],
-            labels = batch[2],
-            negative_sample_ids = batch[3]
+            decoder_input_ids = [2],
+            labels = batch[3],
+            use_negative_loss = False
             )
         loss = outputs['loss']
-        return loss
+
+        outputs = self(
+            input_ids = batch[0],
+            attention_mask = batch[1],
+            decoder_input_ids = [4],
+            labels = batch[5],
+            use_negative_loss = True
+            )
+        n_loss = outputs['loss']
+        
+        return loss + n_loss
     
     def validation_step(self, batch, batch_idx):
-        outputs = self(input_ids = batch[0], attention_mask = batch[1], labels = batch[2], negative_sample_ids = batch[3])
+        outputs = self(input_ids = batch[0], attention_mask = batch[1], labels = batch[2])
         loss = outputs['loss']
         self.log('dev_loss',loss)
     
