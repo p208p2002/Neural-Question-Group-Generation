@@ -122,8 +122,7 @@ class Model(pl.LightningModule,CustomMixin):
         return loss + n_loss
     
     def validation_step(self, batch, batch_idx):
-        outputs = self(input_ids = batch[0], attention_mask = batch[1], decoder_input_ids = [2], labels = batch[3], use_negative_loss = False)
-        loss = outputs['loss']
+        loss = self.training_step(batch, batch_idx)
         self.log('dev_loss',loss)
     
     def on_test_epoch_start(self):
