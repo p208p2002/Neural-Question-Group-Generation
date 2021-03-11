@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
-from modeling.base import argparser
-from modeling.base.model import Model
-from modeling.base.data_module import DataModule
+from models.base import argparser
+from models.base.model import Model
+from models.base.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
-from modeling.base.config import GPUS,ACCELERATOR
+from models.base.config import GPUS,ACCELERATOR
 args = argparser.get_args()
 
 if __name__ == "__main__":

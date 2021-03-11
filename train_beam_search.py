@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
-from modeling.beam_search import argparser
-from modeling.beam_search.model import Model
-from modeling.beam_search.data_module import DataModule
+from models.beam_search import argparser
+from models.beam_search.model import Model
+from models.beam_search.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
-from modeling.beam_search.config import GPUS,ACCELERATOR
+from models.beam_search.config import GPUS,ACCELERATOR
 args = argparser.get_args()
 
 if __name__ == "__main__":
