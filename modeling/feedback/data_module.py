@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 import re
 from .config import *
 import random
+from utils import make_stop_word_ids
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -71,6 +72,8 @@ class UtilsMixin():
 
         self.max_length = max_length
 
+        self.stop_word_ids = make_stop_word_ids(self.tokenizer)
+
         # spec config
         self.dataset_name = dataset_name
         self.eval_input = eval_input  
@@ -78,17 +81,11 @@ class UtilsMixin():
         
     def prepare_input(self,context,label=None,is_negative=False):
         tokenizer = self.tokenizer
+        stop_word_ids = self.stop_word_ids
         pad_token_id = tokenizer.pad_token_id
         input_encodings = tokenizer(context, padding='max_length' if label is not None else False, max_length=self.max_length, truncation=True, add_special_tokens=False)
         
         if label is not None:
-            
-            #
-            if is_negative:
-                label = label.replace(tokenizer.eos_token,tokenizer.pad_token)
-                label = label.replace(re.escape("?"),tokenizer.pad_token)
-                label = label.replace(re.escape("_"),tokenizer.pad_token)
-
             labels = []
             target_encodings = tokenizer(label, padding='max_length', max_length=self.max_length, truncation=True, add_special_tokens=False)
             for target_encoding_id in target_encodings['input_ids']:
@@ -98,8 +95,9 @@ class UtilsMixin():
                     labels.append(-100)
             #
             if is_negative: # ignore head and eos (set to -100) 
-                labels[0:7] = [-100]*7
-                # labels[len(labels)-2:len(labels)] = [-100]*2
+                for i,l_id in enumerate(labels):
+                    if l_id in stop_word_ids:
+                        labels[i] = -100
 
         else:
             labels = None
