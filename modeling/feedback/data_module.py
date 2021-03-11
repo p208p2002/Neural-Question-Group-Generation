@@ -76,12 +76,19 @@ class UtilsMixin():
         self.eval_input = eval_input  
         self.bos_token = bos_token
         
-    def prepare_input(self,context,label=None):
+    def prepare_input(self,context,label=None,is_negative=False):
         tokenizer = self.tokenizer
         pad_token_id = tokenizer.pad_token_id
         input_encodings = tokenizer(context, padding='max_length' if label is not None else False, max_length=self.max_length, truncation=True, add_special_tokens=False)
         
         if label is not None:
+            
+            #
+            if is_negative:
+                label = label.replace(tokenizer.eos_token,tokenizer.pad_token)
+                label = label.replace(re.escape("?"),tokenizer.pad_token)
+                label = label.replace(re.escape("_"),tokenizer.pad_token)
+
             labels = []
             target_encodings = tokenizer(label, padding='max_length', max_length=self.max_length, truncation=True, add_special_tokens=False)
             for target_encoding_id in target_encodings['input_ids']:
@@ -89,6 +96,11 @@ class UtilsMixin():
                     labels.append(target_encoding_id)
                 else:
                     labels.append(-100)
+            #
+            if is_negative: # ignore head and eos (set to -100) 
+                labels[0:7] = [-100]*7
+                # labels[len(labels)-2:len(labels)] = [-100]*2
+
         else:
             labels = None
 
@@ -172,8 +184,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             # random select for negative
             if len(all_questions)>0:
                 random.shuffle(all_questions)
-                negative_sample_label = self.tokenizer.pad_token + self.tokenizer.pad_token + all_questions.pop(0) + self.tokenizer.pad_token
-                model_input['negative_sample_ids'] = self.prepare_input(context, label= negative_sample_label)['labels']
+                negative_sample_label = "^%" + all_questions.pop(0) + self.tokenizer.eos_token
+                model_input['negative_sample_ids'] = self.prepare_input(context, label= negative_sample_label, is_negative = True)['labels']
             else:
                 model_input['negative_sample_ids'] = torch.LongTensor([-100]*len(model_input['labels']))
             

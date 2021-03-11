@@ -38,7 +38,7 @@ class NegativeCElLoss(nn.Module):
     def __init__(self, ignore_index=-100, reduction='mean'):
         super(NegativeCElLoss, self).__init__()
         self.softmax = nn.Softmax(dim=1)
-        self.alpha = 1
+        self.alpha = 0.85
         self.nll = nn.NLLLoss(ignore_index=ignore_index, reduction=reduction)
 
     def forward(self, input, target):
