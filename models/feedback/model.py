@@ -47,12 +47,10 @@ class CustomMixin():
         input_ids = input_ids.squeeze(0).tolist()        
         # gen_ids = None
 
-        for i in range(feedback_times):
-            # if gen_ids is not None:
-            #     input_ids = gen_ids + input_ids
-            #     input_ids = input_ids[:MAX_LENGTH]
+        for i in range(feedback_times):            
             gened_ids = self.tokenizer(GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN,add_special_tokens=False)['input_ids']
             input_ids = gened_ids + input_ids
+            input_ids = input_ids[:MAX_LENGTH]
             
             sample_outputs = self.model.generate(
                 input_ids = torch.LongTensor(input_ids).unsqueeze(0).to(device),
