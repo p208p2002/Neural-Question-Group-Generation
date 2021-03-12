@@ -9,7 +9,7 @@ def get_args():
     parser.add_argument('--dev',type=int,default=0)
     parser.add_argument('--run_test',action='store_true')
     parser.add_argument('-fc','--from_checkpoint',type=str,default=None)
-    parser.add_argument('-ds','--datasets',nargs='+',required=True)
+    parser.add_argument('-ds','--datasets',nargs='+',default=['m_race'],required=False)
     args = parser.parse_args()
 
     allow_datasets = ['m_race']
