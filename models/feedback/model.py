@@ -99,7 +99,7 @@ class Model(pl.LightningModule,CustomMixin):
         outputs = self(
             input_ids = batch[0],
             attention_mask = batch[1],
-            decoder_input_ids = [2],
+            decoder_input_ids = batch[2],
             labels = batch[3],
             use_negative_loss = False
             )
@@ -113,7 +113,7 @@ class Model(pl.LightningModule,CustomMixin):
             outputs = self(
                 input_ids = batch[0],
                 attention_mask = batch[1],
-                decoder_input_ids = [4],
+                decoder_input_ids = batch[4],
                 labels = n_labels,
                 use_negative_loss = True
                 )
