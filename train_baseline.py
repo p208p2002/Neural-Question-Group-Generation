@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
-from models.base import argparser
-from models.base.model import Model
-from models.base.data_module import DataModule
+from models.baseline import argparser
+from models.baseline.model import Model
+from models.baseline.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
-from models.base.config import GPUS,ACCELERATOR
+from models.baseline.config import GPUS,ACCELERATOR
 args = argparser.get_args()
 
 if __name__ == "__main__":
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         accelerator=ACCELERATOR,
         fast_dev_run=args.dev,
         precision=32,
-        default_root_dir='.log_base',
+        default_root_dir='.log_baseline',
         max_epochs=args.epoch,
         callbacks=[
             EarlyStopping(monitor='dev_loss',patience=2),
