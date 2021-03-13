@@ -108,7 +108,7 @@ class Model(pl.LightningModule,CustomMixin):
         if args.disable_negative_loss == False: # use negative_loss
             labels = batch[2]
             n_labels = batch[5]
-            # n_labels = torch.where(labels == n_labels,torch.LongTensor([-100]).to(n_labels.device),n_labels)
+            n_labels = torch.where(labels == n_labels,torch.LongTensor([-100]).to(n_labels.device),n_labels)
 
             outputs = self(
                 input_ids = batch[0],
