@@ -190,7 +190,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             # random select for negative
             if len(all_questions)>0:
                 random.shuffle(all_questions)
-                negative_sample_label = WARN_UP_TOKEN + all_questions.pop(0) + self.tokenizer.eos_token
+                negative_sample_label = WARN_UP_TOKEN + all_questions.pop(-1) + self.tokenizer.eos_token
                 
                 negative_model_input = self.prepare_input(context, label= negative_sample_label, is_negative = True)
 
