@@ -32,4 +32,4 @@ if __name__ == "__main__":
 
     if args.run_test == False:
         trainer.fit(model,datamodule=dm)
-    trainer.test(model if args.run_test else None,datamodule=dm)
+    trainer.test(model if args.run_test else None,datamodule=dm,ckpt_path=None)
