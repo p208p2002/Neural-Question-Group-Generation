@@ -62,3 +62,6 @@ class NegativeCElLoss(nn.Module):
         nsoftmax = self.softmax(input)
         nsoftmax = torch.clamp((1.0 - nsoftmax), min=1e-32)
         return self.nll(torch.log(nsoftmax) * self.alpha, target)
+
+def ignore_pad_token_ids(input_ids,pad_id,ignored_id=-100):
+    return [ignored_id if intput_id == pad_id else intput_id for intput_id in input_ids]
