@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
-from models.unlimited import argparser
-from models.unlimited.model import Model
-from models.unlimited.data_module import DataModule
+from models.openend import argparser
+from models.openend.model import Model
+from models.openend.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
-from models.unlimited.config import GPUS,ACCELERATOR
+from models.openend.config import GPUS,ACCELERATOR
 args = argparser.get_args()
 
 if __name__ == "__main__":
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         accelerator=ACCELERATOR,
         fast_dev_run=args.dev,
         precision=32,
-        default_root_dir='.log_unlimited',
+        default_root_dir='.log_openend',
         max_epochs=args.epoch,
         callbacks=[
             EarlyStopping(monitor='dev_loss',patience=2),
