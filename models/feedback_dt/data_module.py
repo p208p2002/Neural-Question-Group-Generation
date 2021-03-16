@@ -146,6 +146,10 @@ class UtilsMixin():
         model_input['n_decoder_inputs'] = n_decoder_inputs
         model_input['n_decoder_attention_mask'] = n_decoder_attention_mask
         model_input['n_decoder_labels'] = n_decoder_labels
+
+        for key,item in model_input.items():
+            item = torch.LongTensor(item)
+            model_input[key] = item
         
         return model_input
         
@@ -214,11 +218,6 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 label=WARN_UP_TOKEN + question_for_label + self.tokenizer.eos_token,
                 )
             
-            for key,item in model_input.items():
-                item = torch.LongTensor(item)
-                model_input[key] = item
-                # print(key,model_input[key].shape)
-            
             return (
                 # context
                 model_input['encoder_input_ids'],
@@ -233,15 +232,14 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 model_input['n_decoder_labels']
             )
         else:
-            assert False
-            # model_input = self.prepare_input(context, label= None)
-            # return self.construct_eval_output(
-            #     self.dataset_name,
-            #     model_input['input_ids'],
-            #     model_input['attention_mask'],
-            #     data['specific_questions']+data['cloze_questions'],
-            #     context
-            # )
+            model_input = self.prepare_input(context, label= '')
+            return self.construct_eval_output(
+                self.dataset_name,
+                model_input['encoder_input_ids'],
+                model_input['encoder_attention_mask'],
+                data['specific_questions']+data['cloze_questions'],
+                context
+            )
     
     def __len__(self):
         return len(self.datas)

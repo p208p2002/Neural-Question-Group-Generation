@@ -161,3 +161,13 @@ class CustomBartForConditionalGeneration(BartModel):
                 encoder_hidden_states=encoder_outputs.hidden_states,
                 encoder_attentions=encoder_outputs.attentions,
             )
+            
+    @staticmethod
+    def _reorder_cache(past, beam_idx):
+        reordered_past = ()
+        for layer_past in past:
+            # cached cross_attention states don't have to be reordered -> they are always the same
+            reordered_past += (
+                tuple(past_state.index_select(0, beam_idx) for past_state in layer_past[:2]) + layer_past[2:],
+            )
+        return reordered_past
