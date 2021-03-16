@@ -107,9 +107,10 @@ class CustomBartForConditionalGeneration(BartModel):
             
             encoder_hidden_states = encoder_outputs[0]
             encoder_dim_size = encoder_hidden_states.shape[-1]
-            new_encoder_hidden_states_size = list(n_decoder_inputs.size()) + [encoder_dim_size]
+            encoder_length = encoder_hidden_states.shape[-2]
+            new_encoder_hidden_states_size = [n_decoder_inputs.shape[0],encoder_length,encoder_dim_size]
             encoder_hidden_states = encoder_hidden_states.expand(*new_encoder_hidden_states_size)
-            attention_mask = attention_mask.expand(*n_decoder_inputs.shape)
+            attention_mask = attention_mask.expand(*new_encoder_hidden_states_size[:-1])
         
             # negate decoder outputs
             n_decoder_outputs = self.decoder(

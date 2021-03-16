@@ -100,9 +100,9 @@ class Model(pl.LightningModule,CustomMixin):
             decoder_attention_mask = batch[3],
             decoder_labels = batch[4],
 
-            # n_decoder_inputs= batch[5],
-            # n_decoder_attention_mask= batch[6],
-            # n_decoder_labels= batch[7],
+            n_decoder_inputs= batch[5],
+            n_decoder_attention_mask= batch[6],
+            n_decoder_labels= batch[7],
 
             return_dict = True
             )

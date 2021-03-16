@@ -11,6 +11,106 @@ import random
 from utils import make_stop_word_ids,ignore_pad_token_ids
 from transformers.models.bart.modeling_bart import shift_tokens_right
 
+#
+import torch
+import re
+from torch._six import container_abcs, string_classes, int_classes
+
+np_str_obj_array_pattern = re.compile(r'[SaUO]')
+
+
+def default_convert(data):
+    r"""Converts each NumPy array data field into a tensor"""
+    elem_type = type(data)
+    if isinstance(data, torch.Tensor):
+        return data
+    elif elem_type.__module__ == 'numpy' and elem_type.__name__ != 'str_' \
+            and elem_type.__name__ != 'string_':
+        # array of string classes and object
+        if elem_type.__name__ == 'ndarray' \
+                and np_str_obj_array_pattern.search(data.dtype.str) is not None:
+            return data
+        return torch.as_tensor(data)
+    elif isinstance(data, container_abcs.Mapping):
+        return {key: default_convert(data[key]) for key in data}
+    elif isinstance(data, tuple) and hasattr(data, '_fields'):  # namedtuple
+        return elem_type(*(default_convert(d) for d in data))
+    elif isinstance(data, container_abcs.Sequence) and not isinstance(data, string_classes):
+        return [default_convert(d) for d in data]
+    else:
+        return data
+
+
+default_collate_err_msg_format = (
+    "default_collate: batch must contain tensors, numpy arrays, numbers, "
+    "dicts or lists; found {}")
+
+
+def default_collate(batch):
+    
+    # print(numel)
+    count_bundle_len = len(batch[0])
+    # new_batch = []
+    # print(count_data)
+    for i,bundle in enumerate(batch):
+        for j,data in enumerate(bundle):
+            print(i,j,data.shape)
+
+        
+        
+    # r"""Puts each data field into a tensor with outer dimension batch size"""
+
+    # # print("@@@@@@@@")
+    # # print(batch[0][0].shape,len(batch[0]))
+    # # exit()
+    
+
+    # elem = batch[0]
+    # elem_type = type(elem)
+    # if isinstance(elem, torch.Tensor):
+    #     print("in")
+    #     out = None
+    #     if torch.utils.data.get_worker_info() is not None:
+    #         # If we're in a background process, concatenate directly into a
+    #         # shared memory tensor to avoid an extra copy
+    #         numel = sum([x.numel() for x in batch])
+    #         print(numel)
+    #         storage = elem.storage()._new_shared(numel)
+    #         out = elem.new(storage)
+    #     return torch.stack(batch, 0, out=out)
+    # elif elem_type.__module__ == 'numpy' and elem_type.__name__ != 'str_' \
+    #         and elem_type.__name__ != 'string_':
+    #     if elem_type.__name__ == 'ndarray' or elem_type.__name__ == 'memmap':
+    #         # array of string classes and object
+    #         if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
+    #             raise TypeError(default_collate_err_msg_format.format(elem.dtype))
+
+    #         return default_collate([torch.as_tensor(b) for b in batch])
+    #     elif elem.shape == ():  # scalars
+    #         return torch.as_tensor(batch)
+    # elif isinstance(elem, float):
+    #     return torch.tensor(batch, dtype=torch.float64)
+    # elif isinstance(elem, int_classes):
+    #     return torch.tensor(batch)
+    # elif isinstance(elem, string_classes):
+    #     return batch
+    # elif isinstance(elem, container_abcs.Mapping):
+    #     return {key: default_collate([d[key] for d in batch]) for key in elem}
+    # elif isinstance(elem, tuple) and hasattr(elem, '_fields'):  # namedtuple
+    #     return elem_type(*(default_collate(samples) for samples in zip(*batch)))
+    # elif isinstance(elem, container_abcs.Sequence):
+    #     # check to make sure that the elements in batch have consistent size
+    #     it = iter(batch)
+    #     elem_size = len(next(it))
+    #     if not all(len(elem) == elem_size for elem in it):
+    #         raise RuntimeError('each element in list of batch should be of equal size')
+    #     transposed = zip(*batch)
+    #     return [default_collate(samples) for samples in transposed]
+
+    # raise TypeError(default_collate_err_msg_format.format(elem_type))
+
+
+
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
         super().__init__()
@@ -112,10 +212,11 @@ class UtilsMixin():
         model_input['decoder_labels'] = ignore_pad_token_ids(model_input['decoder_labels'],pad_token_id)
         
         # neg
+        max_length = 128
+        n_decoder_inputs = []
+        n_decoder_attention_mask = []
+        n_decoder_labels = []
         if len(gend_labels) >0:
-            n_decoder_inputs = []
-            n_decoder_attention_mask = []
-            n_decoder_labels = []
             for gend_label in gend_labels:
                 # neg decoder input
                 n_decoder_input = tokenizer.bos_token + gend_label
@@ -123,7 +224,7 @@ class UtilsMixin():
                 n_decoder_inputs.append(n_decoder_input_encodings['input_ids'])
                 n_decoder_attention_mask.append(n_decoder_input_encodings['attention_mask'])
                 
-                # nge decoder label
+                # neg decoder label
                 n_decoder_label = gend_label + tokenizer.eos_token
                 n_decoder_label_encodings = tokenizer(
                     n_decoder_label,
@@ -134,10 +235,12 @@ class UtilsMixin():
                     return_attention_mask=False
                 )
                 n_decoder_labels.append(ignore_pad_token_ids(n_decoder_label_encodings['input_ids'],pad_token_id))
-        else:
-            n_decoder_inputs = [tokenizer.pad_token_id]
-            n_decoder_attention_mask = [0]
-            n_decoder_labels = [-100]
+        while len(n_decoder_inputs) < 6:
+            n_decoder_inputs.append([tokenizer.pad_token_id]*max_length)
+            n_decoder_attention_mask.append([0]*max_length)
+            n_decoder_labels.append([-100]*max_length)
+        assert len(n_decoder_inputs) == 6
+        
 
         #
         model_input['n_decoder_inputs'] = n_decoder_inputs
@@ -225,9 +328,9 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 model_input['decoder_attention_mask'],
                 model_input['decoder_labels'],
                 # # negative
-                # model_input['n_decoder_inputs'],
-                # model_input['n_decoder_attention_mask'],
-                # model_input['n_decoder_labels']
+                model_input['n_decoder_inputs'],
+                model_input['n_decoder_attention_mask'],
+                model_input['n_decoder_labels']
             )
         else:
             assert False
