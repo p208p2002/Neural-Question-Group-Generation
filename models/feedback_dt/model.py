@@ -33,8 +33,8 @@ class CustomMixin():
         del score['CIDEr']
 
         # bert score
-        bP, bR, bF1 = self.bert_scorer.score([hyp], [refs])
-        score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
+        # bP, bR, bF1 = self.bert_scorer.score([hyp], [refs])
+        # score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
 
 
         for k in score.keys(): score[k] = str(score[k])
@@ -70,8 +70,6 @@ class CustomMixin():
             decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
             decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-            if WARN_UP_TOKEN != "":
-                decode_questions = decode_questions.replace(WARN_UP_TOKEN,"")
             if self.tokenizer.bos_token is not None:
                 decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
             decode_questions = decode_questions.strip()
@@ -122,16 +120,16 @@ class Model(pl.LightningModule,CustomMixin):
         print("loading NLGEval...finish")
 
         #
-        print("loading BERTScorer...",end="\r")
-        import logging,os
-        import transformers
-        os.environ["TOKENIZERS_PARALLELISM"] = 'true'
-        transformers.tokenization_utils.logger.setLevel(logging.ERROR)
-        transformers.configuration_utils.logger.setLevel(logging.ERROR)
-        transformers.modeling_utils.logger.setLevel(logging.ERROR)
-        from bert_score import BERTScorer
-        self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
-        print("loading BERTScorer...finish")
+        # print("loading BERTScorer...",end="\r")
+        # import logging,os
+        # import transformers
+        # os.environ["TOKENIZERS_PARALLELISM"] = 'true'
+        # transformers.tokenization_utils.logger.setLevel(logging.ERROR)
+        # transformers.configuration_utils.logger.setLevel(logging.ERROR)
+        # transformers.modeling_utils.logger.setLevel(logging.ERROR)
+        # from bert_score import BERTScorer
+        # self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
+        # print("loading BERTScorer...finish")
 
     def test_step(self, batch, batch_idx):
         # tensor

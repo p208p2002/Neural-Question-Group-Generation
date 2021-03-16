@@ -135,7 +135,7 @@ class CustomBartForConditionalGeneration(BartModel):
         masked_lm_loss = torch.tensor([0.0], requires_grad=True).to(input_ids.device)
 
         loss_fct = CrossEntropyLoss()
-        n_loss_fct = NegativeCElLoss()
+        n_loss_fct = NegativeCElLoss(alpha=0.3)
         
         if decoder_labels is not None:
             loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), decoder_labels.view(-1))

@@ -52,10 +52,10 @@ def compute_coverage_score(sents:list,article:str):
     return count_coverage/count_article_sent
 
 class NegativeCElLoss(nn.Module):
-    def __init__(self, ignore_index=-100, reduction='mean'):
+    def __init__(self, ignore_index=-100, reduction='mean',alpha=1.0):
         super(NegativeCElLoss, self).__init__()
         self.softmax = nn.Softmax(dim=1)
-        self.alpha = 1.0
+        self.alpha = alpha
         self.nll = nn.NLLLoss(ignore_index=ignore_index, reduction=reduction)
 
     def forward(self, input, target):

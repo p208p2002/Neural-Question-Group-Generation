@@ -81,7 +81,7 @@ class UtilsMixin():
     
     def prepare_input(self,context,gend_labels=[],label=None,gened_token=GENED_TOKEN,g_sep=GENED_SEP,max_length=MAX_LENGTH):
         tokenizer = self.tokenizer
-    
+        stop_word_ids = self.stop_word_ids
         model_input = {}
         
         pad_token_id = tokenizer.pad_token_id
@@ -108,7 +108,7 @@ class UtilsMixin():
             add_special_tokens=False,
             return_attention_mask=False
         )
-        model_input['decoder_labels'] = decoder_encodings['input_ids']
+        model_input['decoder_labels'] = decoder_label_encodings['input_ids']
         model_input['decoder_labels'] = ignore_pad_token_ids(model_input['decoder_labels'],pad_token_id)
         
         # neg
@@ -134,7 +134,14 @@ class UtilsMixin():
                     add_special_tokens=False,
                     return_attention_mask=False
                 )
-                n_decoder_labels.append(ignore_pad_token_ids(n_decoder_label_encodings['input_ids'],pad_token_id))
+                n_decoder_label_input_ids = n_decoder_label_encodings['input_ids']
+                # ignore stopwords
+                for i,l_id in enumerate(n_decoder_label_input_ids):
+                    if l_id in stop_word_ids:
+                        n_decoder_label_input_ids[i] = -100
+                #
+                # print(n_decoder_label_input_ids)
+                n_decoder_labels.append(ignore_pad_token_ids(n_decoder_label_input_ids,pad_token_id))
         while len(n_decoder_inputs) < 6:
             n_decoder_inputs.append([tokenizer.pad_token_id]*max_length)
             n_decoder_attention_mask.append([0]*max_length)
@@ -214,8 +221,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             gend_labels = all_questions[:]
             model_input = self.prepare_input(
                 context=context,
-                gend_labels=gend_labels,
-                label=WARN_UP_TOKEN + question_for_label + self.tokenizer.eos_token,
+                gend_labels= gend_labels,
+                label= question_for_label + self.tokenizer.eos_token,
                 )
             
             return (
