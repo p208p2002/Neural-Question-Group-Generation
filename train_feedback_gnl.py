@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
-from models.feedback_dt import argparser
-from models.feedback_dt.model import Model
-from models.feedback_dt.data_module import DataModule
+from models.feedback_gnl import argparser
+from models.feedback_gnl.model import Model
+from models.feedback_gnl.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
-from models.feedback_dt.config import GPUS,ACCELERATOR
+from models.feedback_gnl.config import GPUS,ACCELERATOR
 args = argparser.get_args()
 
 if __name__ == "__main__":
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         accelerator=ACCELERATOR,
         fast_dev_run=args.dev,
         precision=32,
-        default_root_dir='.log_feedback_dt',
+        default_root_dir='.log_feedback_gnl',
         max_epochs=args.epoch,
         callbacks=[
             # EarlyStopping(monitor='dev_loss',patience=3),
