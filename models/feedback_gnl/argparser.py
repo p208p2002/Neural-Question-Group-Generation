@@ -11,6 +11,7 @@ def get_args():
     parser.add_argument('-fc','--from_checkpoint',type=str,default=None)
     parser.add_argument('-ds','--datasets',nargs='+',default=['m_race'],required=False)
     parser.add_argument('-dnl','--disable_negative_loss',action='store_true')
+    parser.add_argument('--alpha',type=float,default=1.0)
     args = parser.parse_args()
 
     allow_datasets = ['m_race']
