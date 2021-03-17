@@ -92,6 +92,7 @@ class UtilsMixin():
         model_input['encoder_attention_mask'] = context_encodings['attention_mask']
         
         # pos decoder input
+        max_length = 32
         decoder_input = tokenizer.bos_token + label
         decoder_encodings = tokenizer(decoder_input, padding='max_length', max_length=max_length, truncation=True, add_special_tokens=False)
         
@@ -112,7 +113,6 @@ class UtilsMixin():
         model_input['decoder_labels'] = ignore_pad_token_ids(model_input['decoder_labels'],pad_token_id)
         
         # neg
-        max_length = 128
         n_decoder_inputs = []
         n_decoder_attention_mask = []
         n_decoder_labels = []
@@ -222,7 +222,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             model_input = self.prepare_input(
                 context=context,
                 gend_labels= gend_labels,
-                label= question_for_label + self.tokenizer.eos_token,
+                label= question_for_label,
                 )
             
             return (

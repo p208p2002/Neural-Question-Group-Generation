@@ -6,4 +6,4 @@ MODEL_CONFIG = AutoConfig.from_pretrained(_args.base_model)
 
 ACCELERATOR = 'dp'
 GPUS = -1
-MAX_LENGTH = 1024
+MAX_LENGTH = 512
