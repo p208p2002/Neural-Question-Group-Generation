@@ -1,9 +1,11 @@
 import torch
 import torch.nn as nn
+from typing import Optional, Tuple
+from transformers.file_utils import ModelOutput
 from transformers.models.bart.modeling_bart import (
     BART_INPUTS_DOCSTRING,
     BART_START_DOCSTRING,
-    Seq2SeqLMOutput,
+    # Seq2SeqLMOutput,
     _CONFIG_FOR_DOC,
     BART_GENERATION_EXAMPLE,
     shift_tokens_right,
@@ -19,6 +21,7 @@ from transformers.models.bart.modeling_bart import (
     BartDecoder,
     CrossEntropyLoss
 )
+from dataclasses import dataclass
 from utils import NegativeCElLoss
 from .argparser import get_args
 args = get_args()
@@ -27,7 +30,7 @@ class CustomBartForConditionalGeneration(BartModel):
     def __init__(self, config: BartConfig):
         super().__init__(config)
         self.lm_head = nn.Linear(config.d_model, config._vocab_size)
-        
+
     def forward(
         self,
         input_ids=None,
@@ -134,27 +137,26 @@ class CustomBartForConditionalGeneration(BartModel):
             n_lm_logits = self.lm_head(n_decoder_outputs[0])
         
         # loss
-        masked_lm_loss = torch.tensor([0.0], requires_grad=True).to(input_ids.device)
+        loss = torch.tensor([0.0], requires_grad=True).to(input_ids.device)
+        n_loss = torch.tensor([0.0], requires_grad=True).to(input_ids.device)
 
         loss_fct = CrossEntropyLoss()
         n_loss_fct = NegativeCElLoss(alpha=args.alpha)
         
         if decoder_labels is not None:
             loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), decoder_labels.view(-1))
-            masked_lm_loss = masked_lm_loss + loss
         if n_decoder_labels is not None:
             n_decoder_labels = torch.where(decoder_labels == n_decoder_labels,torch.LongTensor([-100]).to(input_ids.device),n_decoder_labels)
             n_loss = n_loss_fct(n_lm_logits.view(-1, self.config.vocab_size), n_decoder_labels.view(-1))
-            masked_lm_loss = masked_lm_loss + n_loss
-                
-        
+                        
         if not return_dict:
             output = (lm_logits,) + decoder_outputs[1:]
-            return ((masked_lm_loss,) + output) if masked_lm_loss is not None else output
+            return ((loss,) + output) if loss is not None else output
 
         else:
             return Seq2SeqLMOutput(
-                loss=masked_lm_loss,
+                n_loss=n_loss,
+                loss=loss,
                 logits=lm_logits,
                 past_key_values=decoder_outputs.past_key_values,
                 decoder_hidden_states=decoder_outputs.hidden_states,
@@ -174,3 +176,62 @@ class CustomBartForConditionalGeneration(BartModel):
                 tuple(past_state.index_select(0, beam_idx) for past_state in layer_past[:2]) + layer_past[2:],
             )
         return reordered_past
+
+@dataclass
+class Seq2SeqLMOutput(ModelOutput):
+    """
+    Base class for sequence-to-sequence language models outputs.
+
+    Args:
+        loss (:obj:`torch.FloatTensor` of shape :obj:`(1,)`, `optional`, returned when :obj:`labels` is provided):
+            Language modeling loss.
+        logits (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length, config.vocab_size)`):
+            Prediction scores of the language modeling head (scores for each vocabulary token before SoftMax).
+        past_key_values (:obj:`tuple(tuple(torch.FloatTensor))`, `optional`, returned when ``use_cache=True`` is passed or when ``config.use_cache=True``):
+            Tuple of :obj:`tuple(torch.FloatTensor)` of length :obj:`config.n_layers`, with each tuple having 2 tensors
+            of shape :obj:`(batch_size, num_heads, sequence_length, embed_size_per_head)`) and 2 additional tensors of
+            shape :obj:`(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
+
+            Contains pre-computed hidden-states (key and values in the self-attention blocks and in the cross-attention
+            blocks) that can be used (see :obj:`past_key_values` input) to speed up sequential decoding.
+        decoder_hidden_states (:obj:`tuple(torch.FloatTensor)`, `optional`, returned when ``output_hidden_states=True`` is passed or when ``config.output_hidden_states=True``):
+            Tuple of :obj:`torch.FloatTensor` (one for the output of the embeddings + one for the output of each layer)
+            of shape :obj:`(batch_size, sequence_length, hidden_size)`.
+
+            Hidden-states of the decoder at the output of each layer plus the initial embedding outputs.
+        decoder_attentions (:obj:`tuple(torch.FloatTensor)`, `optional`, returned when ``output_attentions=True`` is passed or when ``config.output_attentions=True``):
+            Tuple of :obj:`torch.FloatTensor` (one for each layer) of shape :obj:`(batch_size, num_heads,
+            sequence_length, sequence_length)`.
+
+            Attentions weights of the decoder, after the attention softmax, used to compute the weighted average in the
+            self-attention heads.
+        cross_attentions (:obj:`tuple(torch.FloatTensor)`, `optional`, returned when ``output_attentions=True`` is passed or when ``config.output_attentions=True``):
+            Tuple of :obj:`torch.FloatTensor` (one for each layer) of shape :obj:`(batch_size, num_heads,
+            sequence_length, sequence_length)`.
+
+            Attentions weights of the decoder's cross-attention layer, after the attention softmax, used to compute the
+            weighted average in the cross-attention heads.
+        encoder_last_hidden_state (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length, hidden_size)`, `optional`):
+            Sequence of hidden-states at the output of the last layer of the encoder of the model.
+        encoder_hidden_states (:obj:`tuple(torch.FloatTensor)`, `optional`, returned when ``output_hidden_states=True`` is passed or when ``config.output_hidden_states=True``):
+            Tuple of :obj:`torch.FloatTensor` (one for the output of the embeddings + one for the output of each layer)
+            of shape :obj:`(batch_size, sequence_length, hidden_size)`.
+
+            Hidden-states of the encoder at the output of each layer plus the initial embedding outputs.
+        encoder_attentions (:obj:`tuple(torch.FloatTensor)`, `optional`, returned when ``output_attentions=True`` is passed or when ``config.output_attentions=True``):
+            Tuple of :obj:`torch.FloatTensor` (one for each layer) of shape :obj:`(batch_size, num_heads,
+            sequence_length, sequence_length)`.
+
+            Attentions weights of the encoder, after the attention softmax, used to compute the weighted average in the
+            self-attention heads.
+    """
+    n_loss: Optional[torch.FloatTensor] = None 
+    loss: Optional[torch.FloatTensor] = None
+    logits: torch.FloatTensor = None
+    past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    decoder_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    decoder_attentions: Optional[Tuple[torch.FloatTensor]] = None
+    cross_attentions: Optional[Tuple[torch.FloatTensor]] = None
+    encoder_last_hidden_state: Optional[torch.FloatTensor] = None
+    encoder_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    encoder_attentions: Optional[Tuple[torch.FloatTensor]] = None

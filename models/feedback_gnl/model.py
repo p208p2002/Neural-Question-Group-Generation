@@ -85,11 +85,14 @@ class Model(pl.LightningModule,CustomMixin):
         config._vocab_size = len(self.tokenizer)
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model,config=config)
         self.model.resize_token_embeddings(len(self.tokenizer))
+        self.automatic_optimization = False
+        self.accumulation_step = 10
 
     def forward(self,**kwargs):
         return self.model(**kwargs)
     
     def training_step(self, batch, batch_idx):
+        opt = self.optimizers()
         outputs = self(
             input_ids = batch[0],
             attention_mask = batch[1],
@@ -104,13 +107,24 @@ class Model(pl.LightningModule,CustomMixin):
 
             return_dict = True
             )
-        loss = outputs['loss']        
 
-        return loss
+        loss = outputs['loss']
+        n_loss = outputs['n_loss']
+        loss += (n_loss/args.n_loss_division)
+
+        loss = loss / self.accumulation_step
+        self.manual_backward(loss)
     
-    def validation_step(self, batch, batch_idx):
-        loss = self.training_step(batch, batch_idx)
-        self.log('dev_loss',loss)
+        if (batch_idx % self.accumulation_step) == 0:
+            print("loss",loss.item())
+            opt.step() # update
+            opt.zero_grad() # reset
+
+
+    
+    # def validation_step(self, batch, batch_idx):
+    #     loss = self.training_step(batch, batch_idx)
+    #     self.log('dev_loss',loss)
     
     def on_test_epoch_start(self):
         #

@@ -4,6 +4,6 @@ _args = get_args()
 
 MODEL_CONFIG = AutoConfig.from_pretrained(_args.base_model)
 
-ACCELERATOR = 'dp'
-GPUS = -1
+ACCELERATOR = None
+GPUS = 1
 MAX_LENGTH = 512

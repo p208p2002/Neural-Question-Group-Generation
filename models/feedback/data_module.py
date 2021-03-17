@@ -95,10 +95,10 @@ class UtilsMixin():
                 else:
                     labels.append(-100) # ignore "pad token" in label
             #
-            if is_negative: # ignore head and eos for negative label (set to -100) 
-                for i,l_id in enumerate(labels):
-                    if l_id in stop_word_ids:
-                        labels[i] = -100
+            # if is_negative: # ignore head and eos for negative label (set to -100) 
+            #     for i,l_id in enumerate(labels):
+            #         if l_id in stop_word_ids:
+            #             labels[i] = -100
             # decoder input shift right    
             decoder_input_ids = [tokenizer.bos_token_id] + decoder_input_ids[:-1] # decoder_input_ids is `2` in BART
 

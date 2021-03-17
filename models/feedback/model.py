@@ -61,7 +61,7 @@ class CustomMixin():
                 do_sample=True,
                 top_p=0.9,
                 top_k=10,
-                num_beams=3,
+                num_beams=1,
                 no_repeat_ngram_size=5,
                 num_return_sequences=1,
             )

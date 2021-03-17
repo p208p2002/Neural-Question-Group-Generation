@@ -135,11 +135,11 @@ class UtilsMixin():
                     return_attention_mask=False
                 )
                 n_decoder_label_input_ids = n_decoder_label_encodings['input_ids']
-                # # ignore stopwords
-                # for i,l_id in enumerate(n_decoder_label_input_ids):
-                #     if l_id in stop_word_ids:
-                #         n_decoder_label_input_ids[i] = -100
-                #
+                # ignore stopwords
+                for i,l_id in enumerate(n_decoder_label_input_ids):
+                    if l_id in stop_word_ids:
+                        n_decoder_label_input_ids[i] = -100
+                
                 # print(n_decoder_label_input_ids)
                 n_decoder_labels.append(ignore_pad_token_ids(n_decoder_label_input_ids,pad_token_id))
         while len(n_decoder_inputs) < 6:
