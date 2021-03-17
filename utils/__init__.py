@@ -7,24 +7,24 @@ _stop_words_sign = open('utils/stopwords-sign.txt','r',encoding='utf-8').read().
 stop_words = _stop_words_en + _stop_words_sign
 def make_stop_word_ids(tokenizer,stop_words=stop_words):
     stop_word_ids = []
-    for stop_word in stop_words:
-        # w/o prefix
-        uncased_stop_word_ids = tokenizer(stop_word,add_special_tokens=False)['input_ids']
-        cased_stop_word = stop_word[0].upper() + stop_word[1:]
-        cased_stop_word_ids = tokenizer(cased_stop_word,add_special_tokens=False)['input_ids']
-        stop_word_ids += (uncased_stop_word_ids + cased_stop_word_ids)
+    # for stop_word in stop_words:
+    #     # w/o prefix
+    #     uncased_stop_word_ids = tokenizer(stop_word,add_special_tokens=False)['input_ids']
+    #     cased_stop_word = stop_word[0].upper() + stop_word[1:]
+    #     cased_stop_word_ids = tokenizer(cased_stop_word,add_special_tokens=False)['input_ids']
+    #     stop_word_ids += (uncased_stop_word_ids + cased_stop_word_ids)
 
-        # word prefix
-        prefix_uncased_word = "Ġ" + stop_word
-        prefix_cased_word = "Ġ" + cased_stop_word
+    #     # word prefix
+    #     prefix_uncased_word = "Ġ" + stop_word
+    #     prefix_cased_word = "Ġ" + cased_stop_word
         
-        prefix_uncased_word_id = tokenizer.convert_tokens_to_ids(prefix_uncased_word)
-        prefix_cased_word_id = tokenizer.convert_tokens_to_ids(prefix_cased_word)
+    #     prefix_uncased_word_id = tokenizer.convert_tokens_to_ids(prefix_uncased_word)
+    #     prefix_cased_word_id = tokenizer.convert_tokens_to_ids(prefix_cased_word)
 
-        assert type(prefix_uncased_word_id) == int
-        assert type(prefix_cased_word_id) == int
+    #     assert type(prefix_uncased_word_id) == int
+    #     assert type(prefix_cased_word_id) == int
 
-        stop_word_ids += [prefix_uncased_word_id,prefix_cased_word_id]
+    #     stop_word_ids += [prefix_uncased_word_id,prefix_cased_word_id]
 
     # sign prefix
     for sign in _stop_words_sign:

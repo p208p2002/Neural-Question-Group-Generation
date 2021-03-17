@@ -125,7 +125,7 @@ class UtilsMixin():
                 n_decoder_attention_mask.append(n_decoder_input_encodings['attention_mask'])
                 
                 # neg decoder label
-                n_decoder_label = gend_label + tokenizer.eos_token
+                n_decoder_label = gend_label + tokenizer.pad_token # usd pad_token for eos
                 n_decoder_label_encodings = tokenizer(
                     n_decoder_label,
                     padding='max_length',
@@ -198,7 +198,10 @@ class MergeRaceDataset(Dataset,UtilsMixin):
     def __getitem__(self,index):
         data = self.datas[index]
         context = data['article']
+
         article_spec_questions = data['specific_questions']
+        article_spec_questions = [q.replace("?"," ?") for q in article_spec_questions]
+        
         cloze_questions = data['cloze_questions']
 
         all_questions = article_spec_questions + cloze_questions
