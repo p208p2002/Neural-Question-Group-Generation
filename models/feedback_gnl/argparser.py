@@ -12,7 +12,9 @@ def get_args():
     parser.add_argument('-ds','--datasets',nargs='+',default=['m_race'],required=False)
     parser.add_argument('-dnl','--disable_negative_loss',action='store_true')
     parser.add_argument('--alpha',type=float,default=1.0)
-    parser.add_argument('--n_loss_division',type=float,default=1000)
+    parser.add_argument('--n_loss_division',type=float,default=1000.0)
+    parser.add_argument('--accumulation_step',type=int,default=10)
+
     args = parser.parse_args()
 
     allow_datasets = ['m_race']

@@ -86,7 +86,7 @@ class Model(pl.LightningModule,CustomMixin):
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model,config=config)
         self.model.resize_token_embeddings(len(self.tokenizer))
         self.automatic_optimization = False
-        self.accumulation_step = 10
+        self.accumulation_step = args.accumulation_step
 
     def forward(self,**kwargs):
         return self.model(**kwargs)
