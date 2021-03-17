@@ -7,6 +7,6 @@ MODEL_CONFIG = AutoConfig.from_pretrained(_args.base_model)
 ACCELERATOR = 'dp'
 GPUS = -1
 MAX_LENGTH = 512
-
+MAX_QUESTION_LENGTH = 32
 WARN_UP_TOKEN = "^%"
 

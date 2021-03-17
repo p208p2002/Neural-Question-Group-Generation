@@ -3,6 +3,8 @@ from transformers.models.bart.configuration_bart import BartConfig
 import torch
 import torch.nn as nn
 from utils import NegativeCElLoss
+from .argparser import get_args
+args = get_args()
 from transformers.models.bart.modeling_bart import (
     BART_INPUTS_DOCSTRING,
     BART_START_DOCSTRING,
@@ -85,7 +87,7 @@ class CustomBartForConditionalGeneration(BartForConditionalGeneration):
         if labels is not None:
             loss_fct = None
             if use_negative_loss:
-                loss_fct = NegativeCElLoss()
+                loss_fct = NegativeCElLoss(alpha=args.alpha)
             else:
                 loss_fct = CrossEntropyLoss()
             masked_lm_loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), labels.view(-1))

@@ -65,12 +65,11 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
 
 class UtilsMixin():
-    def set_config(self,dataset_name, eval_input, bos_token, max_length=MAX_LENGTH ):
+    def set_config(self,dataset_name, eval_input, bos_token ):
         # general config
         self.tokenizer = get_tokenizer()
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
-        self.max_length = max_length
 
         self.stop_word_ids = make_stop_word_ids(self.tokenizer)
 
@@ -83,12 +82,12 @@ class UtilsMixin():
         tokenizer = self.tokenizer
         stop_word_ids = self.stop_word_ids
         pad_token_id = tokenizer.pad_token_id
-        input_encodings = tokenizer(context, padding='max_length' if label is not None else False, max_length=self.max_length, truncation=True, add_special_tokens=False)
+        input_encodings = tokenizer(context, padding='max_length' if label is not None else False, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)
         
         if label is not None:
             decoder_input_ids = []
             labels = []
-            target_encodings = tokenizer(label, padding='max_length', max_length=32, truncation=True, add_special_tokens=False)
+            target_encodings = tokenizer(label, padding='max_length', max_length=MAX_QUESTION_LENGTH, truncation=True, add_special_tokens=False)
             for target_encoding_id in target_encodings['input_ids']:
                 decoder_input_ids.append(target_encoding_id)
                 if target_encoding_id != pad_token_id:
