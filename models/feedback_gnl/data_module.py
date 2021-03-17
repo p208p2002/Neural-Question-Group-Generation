@@ -199,9 +199,11 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         data = self.datas[index]
         context = data['article']
 
+        #
+        data['specific_questions'] = [q.replace("?"," ?") for q in data['specific_questions']]
+        data['cloze_questions'] =  [q.replace("?"," ?") for q in data['cloze_questions']]
+
         article_spec_questions = data['specific_questions']
-        article_spec_questions = [q.replace("?"," ?") for q in article_spec_questions]
-        
         cloze_questions = data['cloze_questions']
 
         all_questions = article_spec_questions + cloze_questions
