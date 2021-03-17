@@ -58,12 +58,12 @@ class CustomMixin():
                 attention_mask=torch.LongTensor([1]*len(input_ids)).unsqueeze(0).to(device),
                 max_length=MAX_LENGTH,
                 early_stopping=True,
-                # temperature=0.85,
+                # temperature=0.7,
                 do_sample=True,
                 top_p=0.9,
-                top_k=10,
+                top_k=20,
                 num_beams=1,
-                no_repeat_ngram_size=5,
+                no_repeat_ngram_size=2,
                 num_return_sequences=1,
             )
             sample_output = sample_outputs[0]        

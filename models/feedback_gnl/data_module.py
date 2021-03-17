@@ -135,10 +135,10 @@ class UtilsMixin():
                     return_attention_mask=False
                 )
                 n_decoder_label_input_ids = n_decoder_label_encodings['input_ids']
-                # ignore stopwords
-                for i,l_id in enumerate(n_decoder_label_input_ids):
-                    if l_id in stop_word_ids:
-                        n_decoder_label_input_ids[i] = -100
+                # # ignore stopwords
+                # for i,l_id in enumerate(n_decoder_label_input_ids):
+                #     if l_id in stop_word_ids:
+                #         n_decoder_label_input_ids[i] = -100
                 #
                 # print(n_decoder_label_input_ids)
                 n_decoder_labels.append(ignore_pad_token_ids(n_decoder_label_input_ids,pad_token_id))
@@ -200,8 +200,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         context = data['article']
 
         #
-        data['specific_questions'] = [q.replace("?"," ?") for q in data['specific_questions']]
-        data['cloze_questions'] =  [q.replace("?"," ?") for q in data['cloze_questions']]
+        # data['specific_questions'] = [q.replace("?"," ?") for q in data['specific_questions']]
+        # data['cloze_questions'] =  [q.replace("?"," ?") for q in data['cloze_questions']]
 
         article_spec_questions = data['specific_questions']
         cloze_questions = data['cloze_questions']
