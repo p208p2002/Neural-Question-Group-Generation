@@ -88,7 +88,7 @@ class UtilsMixin():
         if label is not None:
             decoder_input_ids = []
             labels = []
-            target_encodings = tokenizer(label, padding='max_length', max_length=self.max_length, truncation=True, add_special_tokens=False)
+            target_encodings = tokenizer(label, padding='max_length', max_length=32, truncation=True, add_special_tokens=False)
             for target_encoding_id in target_encodings['input_ids']:
                 decoder_input_ids.append(target_encoding_id)
                 if target_encoding_id != pad_token_id:
@@ -101,7 +101,7 @@ class UtilsMixin():
                     if l_id in stop_word_ids:
                         labels[i] = -100
             # decoder input shift right    
-            decoder_input_ids = [MODEL_CONFIG.decoder_start_token_id] + decoder_input_ids[:-1] # decoder_input_ids is `2` in BART
+            decoder_input_ids = [tokenizer.bos_token_id] + decoder_input_ids[:-1] # decoder_input_ids is `2` in BART
 
         else:
             labels = None

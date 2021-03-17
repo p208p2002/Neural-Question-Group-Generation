@@ -1,6 +1,7 @@
 .*/
 datasets/
 test.py
+test_*.py
 *__py*__/
 .log_*/
 datasets.b
