@@ -17,16 +17,13 @@ class CustomMixin():
     def compute_score(self,hyp,refs):
         #
         hyp = hyp.strip().replace("\n","")
-        if hyp == '': hyp = '#'
-
         refs = refs[:]
         refs = [ref.strip().replace("\n","") for ref in refs]
         for ref in refs[:]:
             if ref == '': refs.remove(ref)
         if len(refs) == 0: refs.append("@")
 
-
-        # token scores    
+        # token scores
         score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
         
         del score['CIDEr']

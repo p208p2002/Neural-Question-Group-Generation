@@ -18,7 +18,7 @@ class CustomMixin():
     def compute_score(self,hyp,refs):
         #
         hyp = hyp.strip().replace("\n","")
-        if hyp == '': hyp = '#'
+        # if hyp == '': hyp = '#'
 
         refs = refs[:]
         refs = [ref.strip().replace("\n","") for ref in refs]
