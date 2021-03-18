@@ -32,11 +32,6 @@ class CustomMixin():
         
         del score['CIDEr']
 
-        # bert score
-        # bP, bR, bF1 = self.bert_scorer.score([hyp], [refs])
-        # score['BertScore'] = bF1.item() if bF1.item() > 0.0 else 0.0
-
-
         for k in score.keys(): score[k] = str(score[k])
 
         return score
@@ -133,18 +128,6 @@ class Model(pl.LightningModule,CustomMixin):
         from nlgeval import NLGEval
         self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True)  # loads the models
         print("loading NLGEval...finish")
-
-        #
-        # print("loading BERTScorer...",end="\r")
-        # import logging,os
-        # import transformers
-        # os.environ["TOKENIZERS_PARALLELISM"] = 'true'
-        # transformers.tokenization_utils.logger.setLevel(logging.ERROR)
-        # transformers.configuration_utils.logger.setLevel(logging.ERROR)
-        # transformers.modeling_utils.logger.setLevel(logging.ERROR)
-        # from bert_score import BERTScorer
-        # self.bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
-        # print("loading BERTScorer...finish")
 
     def test_step(self, batch, batch_idx):
         # tensor
