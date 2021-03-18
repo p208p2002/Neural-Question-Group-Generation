@@ -78,8 +78,9 @@ class CustomMixin():
         return outputs
 
 class Model(pl.LightningModule,CustomMixin):
-    def __init__(self):
+    def __init__(self,args):
         super().__init__()
+        self.save_hyperparameters(args)
         self.tokenizer = get_tokenizer()
         config = BartConfig.from_pretrained('facebook/bart-base')
         config._vocab_size = len(self.tokenizer)

@@ -79,8 +79,9 @@ class CustomMixin():
         return outputs
 
 class Model(pl.LightningModule,CustomMixin):
-    def __init__(self):
+    def __init__(self,args=args):
         super().__init__()
+        self.save_hyperparameters(args)
         self.tokenizer = get_tokenizer()
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
