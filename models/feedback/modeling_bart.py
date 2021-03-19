@@ -30,11 +30,11 @@ class NegativeCElLoss(nn.Module):
         self.beta = beta
         self.nll = nn.NLLLoss(ignore_index=ignore_index, reduction=reduction)
 
-    def forward(self, input, target):
-        nsoftmax = self.softmax(input)
+    def forward(self, logits, target):
+        nsoftmax = self.softmax(logits)
         nsoftmax = torch.where(
-                nsoftmax<=torch.tensor([self.beta],dtype=input.dtype).to(input.device),
-                torch.tensor([1e-32],requires_grad=True,dtype=input.dtype).to(input.device),
+                nsoftmax<=torch.tensor([self.beta],dtype=logits.dtype).to(logits.device),
+                torch.tensor([1e-32],requires_grad=True,dtype=logits.dtype).to(logits.device),
                 nsoftmax
             )
         nsoftmax = torch.clamp((1.0 - nsoftmax), min=1e-32)

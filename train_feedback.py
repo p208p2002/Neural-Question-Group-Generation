@@ -37,9 +37,9 @@ if __name__ == "__main__":
     
     # train
     if args.run_test == False:
-        # tuner = pl.tuner.tuning.Tuner(deepcopy(trainer))
-        # new_batch_size = tuner.scale_batch_size(model, datamodule=dm)
-        # model.hparams.batch_size = new_batch_size
+        tuner = pl.tuner.tuning.Tuner(deepcopy(trainer))
+        new_batch_size = tuner.scale_batch_size(model, datamodule=dm)
+        model.hparams.batch_size = new_batch_size
         trainer.fit(model,datamodule=dm)
 
     # run_test

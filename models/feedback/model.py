@@ -77,7 +77,7 @@ class Model(pl.LightningModule,CustomMixin):
         self.tokenizer = get_tokenizer()
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
-        self.automatic_optimization = False
+        # self.automatic_optimization = False
         self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
 
     def forward(self, input_ids,attention_mask,labels=None,use_negative_loss=False,decoder_input_ids=None):
@@ -90,9 +90,13 @@ class Model(pl.LightningModule,CustomMixin):
                 use_negative_loss=use_negative_loss
             )
     
+    def get_progress_bar_dict(self):
+        items = super().get_progress_bar_dict()
+        items["loss"] = items.pop("loss", None) # change display order
+        return items
+    
     def training_step(self, batch, batch_idx):
-        opt = self.opt
-
+        
         outputs = self(
             input_ids = batch[0],
             attention_mask = batch[1],
@@ -101,8 +105,7 @@ class Model(pl.LightningModule,CustomMixin):
             use_negative_loss = False
             )
         loss = outputs['loss']
-        loss.backward()
-
+        
         if args.disable_negative_loss == False: # use negative_loss
             labels = batch[2]
             n_labels = batch[5]
@@ -116,22 +119,16 @@ class Model(pl.LightningModule,CustomMixin):
                 use_negative_loss = True
                 )
             n_loss = n_outputs['loss']
-            n_loss.backward()
-        
-        
-        
-        opt.step()
-        opt.zero_grad()
+            loss += n_loss
 
-        
         if args.disable_negative_loss == False: # use negative_loss
-            self.log_dict({'pos_loss': loss, 'neg_loss': n_loss}, prog_bar=True)
-        else:
-            self.log_dict({'pos_loss': loss}, prog_bar=True)
+            self.log_dict({'n_loss': n_loss}, prog_bar=True)
+        
+        return loss
 
     # def validation_step(self, batch, batch_idx):
     #     loss = self.training_step(batch, batch_idx)
-    #     self.log('dev_loss',loss)
+    #     self.log('dev_loss',loss,prog_bar=True)
     
     def on_test_epoch_start(self):
         #
