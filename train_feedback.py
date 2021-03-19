@@ -20,7 +20,8 @@ if __name__ == "__main__":
         max_epochs=args.epoch,
         callbacks=[
             # EarlyStopping(monitor='dev_loss',patience=3),
-            ModelCheckpoint(monitor='dev_loss',filename='{epoch}-{dev_loss:.2f}',save_last=True),
+            # ModelCheckpoint(monitor='dev_loss',filename='{epoch}-{dev_loss:.2f}',save_last=True),
+            ModelCheckpoint(save_last=True),
         ]
     )
 
