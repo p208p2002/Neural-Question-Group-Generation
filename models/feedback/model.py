@@ -78,6 +78,7 @@ class Model(pl.LightningModule,CustomMixin):
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
         self.automatic_optimization = False
+        self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
 
     def forward(self, input_ids,attention_mask,labels=None,use_negative_loss=False,decoder_input_ids=None):
         return self.model(
@@ -90,7 +91,7 @@ class Model(pl.LightningModule,CustomMixin):
             )
     
     def training_step(self, batch, batch_idx):
-        opt = self.optimizers()
+        opt = self.opt
 
         outputs = self(
             input_ids = batch[0],
@@ -100,25 +101,28 @@ class Model(pl.LightningModule,CustomMixin):
             use_negative_loss = False
             )
         loss = outputs['loss']
-        self.manual_backward(loss)  
+        loss.backward()
 
         if args.disable_negative_loss == False: # use negative_loss
             labels = batch[2]
             n_labels = batch[5]
             n_labels = torch.where(labels == n_labels,torch.LongTensor([-100]).to(n_labels.device),n_labels)
 
-            outputs = self(
+            n_outputs = self(
                 input_ids = batch[0],
                 attention_mask = batch[1],
                 decoder_input_ids = batch[4],
                 labels = n_labels,
                 use_negative_loss = True
                 )
-            n_loss = outputs['loss']
-            self.manual_backward(n_loss)
-
+            n_loss = n_outputs['loss']
+            n_loss.backward()
+        
+        
+        
         opt.step()
         opt.zero_grad()
+
         
         if args.disable_negative_loss == False: # use negative_loss
             self.log_dict({'pos_loss': loss, 'neg_loss': n_loss}, prog_bar=True)
@@ -195,4 +199,4 @@ class Model(pl.LightningModule,CustomMixin):
             log_f.write(output_str)
                 
     def configure_optimizers(self):
-        return torch.optim.AdamW(self.parameters(), lr=args.lr)
+        return self.opt
