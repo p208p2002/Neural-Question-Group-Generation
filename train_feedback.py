@@ -5,6 +5,8 @@ from models.feedback.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 from models.feedback.config import GPUS,ACCELERATOR
+from copy import deepcopy
+
 args = argparser.get_args()
 
 if __name__ == "__main__":
@@ -22,14 +24,30 @@ if __name__ == "__main__":
         ]
     )
 
+    # DataModule
     dm = DataModule()
 
+    # from_checkpoint
     if args.from_checkpoint is None:
         model = Model()
     else:
         print('load from checkpoint')
         model = Model.load_from_checkpoint(args.from_checkpoint)
-
+    
+    # train
     if args.run_test == False:
+        tuner = pl.tuner.tuning.Tuner(deepcopy(trainer))
+        new_batch_size = tuner.scale_batch_size(model, datamodule=dm)
+        model.hparams.batch_size = new_batch_size
         trainer.fit(model,datamodule=dm)
-    trainer.test(model if args.run_test else None,datamodule=dm,ckpt_path=None)
+
+    # run_test
+    last_model_path = trainer.checkpoint_callback.last_model_path
+    best_model_path = trainer.checkpoint_callback.best_model_path
+    _use_model_path = last_model_path if best_model_path == "" else best_model_path
+    print('use checkpoint:',_use_model_path)
+    trainer.test(
+            model=model if _use_model_path == "" else None,
+            datamodule=dm,
+            ckpt_path=_use_model_path
+        )
