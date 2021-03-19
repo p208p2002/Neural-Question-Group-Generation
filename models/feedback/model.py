@@ -77,6 +77,7 @@ class Model(pl.LightningModule,CustomMixin):
         self.tokenizer = get_tokenizer()
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
+        self.automatic_optimization = False
 
     def forward(self, input_ids,attention_mask,labels=None,use_negative_loss=False,decoder_input_ids=None):
         return self.model(
@@ -89,6 +90,8 @@ class Model(pl.LightningModule,CustomMixin):
             )
     
     def training_step(self, batch, batch_idx):
+        opt = self.optimizers()
+
         outputs = self(
             input_ids = batch[0],
             attention_mask = batch[1],
@@ -96,7 +99,8 @@ class Model(pl.LightningModule,CustomMixin):
             labels = batch[3],
             use_negative_loss = False
             )
-        loss = outputs['loss']        
+        loss = outputs['loss']
+        self.manual_backward(loss)  
 
         if args.disable_negative_loss == False: # use negative_loss
             labels = batch[2]
@@ -111,13 +115,19 @@ class Model(pl.LightningModule,CustomMixin):
                 use_negative_loss = True
                 )
             n_loss = outputs['loss']
-            loss += n_loss
+            self.manual_backward(n_loss)
+
+        opt.step()
+        opt.zero_grad()
         
-        return loss
-    
-    def validation_step(self, batch, batch_idx):
-        loss = self.training_step(batch, batch_idx)
-        self.log('dev_loss',loss)
+        if args.disable_negative_loss == False: # use negative_loss
+            self.log_dict({'pos_loss': loss, 'neg_loss': n_loss}, prog_bar=True)
+        else:
+            self.log_dict({'pos_loss': loss}, prog_bar=True)
+
+    # def validation_step(self, batch, batch_idx):
+    #     loss = self.training_step(batch, batch_idx)
+    #     self.log('dev_loss',loss)
     
     def on_test_epoch_start(self):
         #

@@ -2,7 +2,6 @@ from transformers import BartForConditionalGeneration
 from transformers.models.bart.configuration_bart import BartConfig
 import torch
 import torch.nn as nn
-from utils import NegativeCElLoss
 from .argparser import get_args
 args = get_args()
 from transformers.models.bart.modeling_bart import (
@@ -21,6 +20,25 @@ from transformers.models.bart.modeling_bart import (
     BartModel,
     CrossEntropyLoss
 )
+
+
+class NegativeCElLoss(nn.Module):
+    def __init__(self, ignore_index=-100, reduction='mean',alpha=1.0,beta=0.8):
+        super(NegativeCElLoss, self).__init__()
+        self.softmax = nn.Softmax(dim=1)
+        self.alpha = alpha
+        self.beta = beta
+        self.nll = nn.NLLLoss(ignore_index=ignore_index, reduction=reduction)
+
+    def forward(self, input, target):
+        nsoftmax = self.softmax(input)
+        nsoftmax = torch.where(
+                nsoftmax<=torch.tensor([self.beta]).to(input.dtype).to(input.device),
+                torch.tensor([0.0],requires_grad=True).to(input.dtype).to(input.device),
+                nsoftmax
+            )
+        nsoftmax = torch.clamp((1.0 - nsoftmax), min=1e-32)
+        return self.nll(torch.log(nsoftmax) * self.alpha, target)
 
 @add_start_docstrings(
     "The BART Model with a language modeling head. Can be used for summarization.", BART_START_DOCSTRING
@@ -87,7 +105,7 @@ class CustomBartForConditionalGeneration(BartForConditionalGeneration):
         if labels is not None:
             loss_fct = None
             if use_negative_loss:
-                loss_fct = NegativeCElLoss(alpha=args.alpha)
+                loss_fct = NegativeCElLoss(alpha=args.alpha,beta=args.beta)
             else:
                 loss_fct = CrossEntropyLoss()
             masked_lm_loss = loss_fct(lm_logits.view(-1, self.config.vocab_size), labels.view(-1))
