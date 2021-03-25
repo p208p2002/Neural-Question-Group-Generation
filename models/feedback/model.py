@@ -15,24 +15,6 @@ from utils.scorer import SimilarityScorer,CoverageScorer
 args = get_args()
 
 class CustomMixin():
-    # def compute_score(self,hyp,refs):
-    #     #
-    #     hyp = hyp.strip().replace("\n","")
-    #     refs = refs[:]
-    #     refs = [ref.strip().replace("\n","") for ref in refs]
-    #     for ref in refs[:]:
-    #         if ref == '': refs.remove(ref)
-    #     if len(refs) == 0: refs.append("@")
-
-    #     # token scores
-    #     score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
-        
-    #     del score['CIDEr']
-
-    #     for k in score.keys(): score[k] = str(score[k])
-
-    #     return score
-    
     def feedback_generation(self, input_ids, feedback_times = 3):
         outputs = []
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
