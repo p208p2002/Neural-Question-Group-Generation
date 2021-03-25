@@ -8,6 +8,7 @@ import os
 import json
 from .config import *
 from utils.scorer import SimilarityScorer, CoverageScorer
+from utils.logger import PredictLogger
 args = get_args()
 
 def _parse_question(question):
@@ -59,6 +60,7 @@ class Model(pl.LightningModule):
         self.classmate_scorer = SimilarityScorer()
         self.keyword_coverage_scorer = CoverageScorer()
         self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
+        self.predict_logger = PredictLogger(save_dir=self._log_dir)
     
     def test_step(self, batch, batch_idx):
         # tensor
@@ -122,6 +124,13 @@ class Model(pl.LightningModule):
 
         # keyword coverage score
         self.keyword_coverage_scorer.add(decode_questions,article)
+
+        # predict log
+        self.predict_logger.log({
+            'article':article,
+            'label_questions':label_questions,
+            'decode_questions':decode_questions
+        })
 
     def test_epoch_end(self,outputs):
         self.reference_scorer.compute(save_report_dir=self._log_dir,save_file_name='reference_score.txt')
