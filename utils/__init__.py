@@ -35,33 +35,3 @@ def make_stop_word_ids(tokenizer,stop_words=stop_words):
 
     return list(set(stop_word_ids))
 
-def compute_coverage_score(sents:list,article:str):
-    sent = ' '.join(sents)
-    sent_list = re.split(r",|\.|\!|\?",sent)
-    for sent in sent_list[:]:
-        if sent == '': sent_list.remove(sent)
-    
-    # get sents keywords
-    keyword_list = []
-    for sent in sent_list[:]:
-        sent = sent.lower()
-        word_list = sent.split()
-        for word in word_list:
-            if word not in stop_words:
-                keyword_list.append(word)
-    
-    # process acticle into words and compute coverage
-    article_sent_list = re.split(r",|\.|\!|\?",article)
-    
-    count_article_sent = len(article_sent_list)
-    if count_article_sent == 0:
-        return 0.0
-    
-    count_coverage = 0
-    for article_sent in article_sent_list:
-        article_sent = article_sent.lower().split()
-        for keyword in keyword_list:
-            if keyword in article_sent:
-                count_coverage += 1
-                break 
-    return count_coverage/count_article_sent
