@@ -8,7 +8,6 @@ import pytorch_lightning as pl
 import re
 from .config import *
 import random
-from utils import make_stop_word_ids
 from transformers.models.bart.modeling_bart import shift_tokens_right
 
 class DataModule(pl.LightningDataModule):
@@ -71,8 +70,6 @@ class UtilsMixin():
         self.sep_token = self.tokenizer.sep_token
         self.pad_token_id = self.tokenizer.pad_token_id
 
-        self.stop_word_ids = make_stop_word_ids(self.tokenizer)
-
         # spec config
         self.dataset_name = dataset_name
         self.eval_input = eval_input  
@@ -80,7 +77,7 @@ class UtilsMixin():
         
     def prepare_input(self,context,label=None,is_negative=False):
         tokenizer = self.tokenizer
-        stop_word_ids = self.stop_word_ids
+        # stop_word_ids = self.stop_word_ids
         pad_token_id = tokenizer.pad_token_id
         input_encodings = tokenizer(context, padding='max_length' if label is not None else False, max_length=MAX_LENGTH, truncation=True, add_special_tokens=False)
         
