@@ -65,18 +65,3 @@ def compute_coverage_score(sents:list,article:str):
                 count_coverage += 1
                 break 
     return count_coverage/count_article_sent
-
-class NegativeCElLoss(nn.Module):
-    def __init__(self, ignore_index=-100, reduction='mean',alpha=1.0):
-        super(NegativeCElLoss, self).__init__()
-        self.softmax = nn.Softmax(dim=1)
-        self.alpha = alpha
-        self.nll = nn.NLLLoss(ignore_index=ignore_index, reduction=reduction)
-
-    def forward(self, input, target):
-        nsoftmax = self.softmax(input)
-        nsoftmax = torch.clamp((1.0 - nsoftmax), min=1e-32)
-        return self.nll(torch.log(nsoftmax) * self.alpha, target)
-
-def ignore_pad_token_ids(input_ids,pad_id,ignored_id=-100):
-    return [ignored_id if intput_id == pad_id else intput_id for intput_id in input_ids]
