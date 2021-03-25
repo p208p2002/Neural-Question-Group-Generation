@@ -7,7 +7,6 @@ import re
 import os
 import json
 from .config import *
-# from utils import compute_coverage_score
 from utils.scorer import SimilarityScorer, CoverageScorer
 args = get_args()
 

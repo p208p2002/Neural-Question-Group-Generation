@@ -7,7 +7,7 @@ import re
 import os
 import json
 from .config import *
-from utils import compute_coverage_score
+from utils.scorer import SimilarityScorer, CoverageScorer
 args = get_args()
 
 def _parse_question(question):
@@ -55,33 +55,10 @@ class Model(pl.LightningModule):
         self.log('dev_loss',loss)
     
     def on_test_epoch_start(self):
-        #
-        print("loading NLGEval...",end="\r")
-        from nlgeval import NLGEval
-        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True)  # loads the models
-        print("loading NLGEval...finish")
-    
-    def compute_score(self,hyp,refs):
-        #
-        hyp = hyp.strip().replace("\n","")
-        # if hyp == '': hyp = '#'
-
-        refs = refs[:]
-        refs = [ref.strip().replace("\n","") for ref in refs]
-        for ref in refs[:]:
-            if ref == '': refs.remove(ref)
-        if len(refs) == 0: refs.append("@")
-
-
-        # token scores    
-        score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
-        
-        del score['CIDEr']
-
-        for k in score.keys(): score[k] = str(score[k])
-
-        return score
-
+        self.reference_scorer = SimilarityScorer()
+        self.classmate_scorer = SimilarityScorer()
+        self.keyword_coverage_scorer = CoverageScorer()
+        self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
     
     def test_step(self, batch, batch_idx):
         # tensor
@@ -90,7 +67,10 @@ class Model(pl.LightningModule):
         attention_mask = batch[2]
         # string
         label_questions = batch[3]
+        label_questions = [_q[0] for _q in label_questions]
+        
         article = batch[4]
+        article = article[0]
 
         input_ids_len = input_ids.shape[-1]
         batch_size = input_ids.shape[0]
@@ -113,10 +93,7 @@ class Model(pl.LightningModule):
         sample_output = sample_outputs[0]     
         for sample_output in sample_outputs:
             decode_questions +=  "_$[0]" + self.tokenizer.decode(sample_output, skip_special_tokens=True)
-
-        if args.dev: print(decode_questions)
-       
-        
+    
         if 'm_race' in args.datasets:
             decode_questions = decode_questions.split('_$')
             new_decode_questions = []
@@ -129,56 +106,27 @@ class Model(pl.LightningModule):
             decode_questions = new_decode_questions
         else:
             decode_questions = decode_questions.split(self.tokenizer.sep_token)
-
-        # if len(decode_questions) >0 and decode_questions[-1] == self.tokenizer.eos_token:
-        #     decode_questions.pop(-1)
-        # print(len(decode_questions))
-
-        output =  {
-            'batch_idx':batch_idx,
-            'dataset_name':dataset_name,
-            'questions':decode_questions,
-            'labels':[_q[0] for _q in label_questions],
-            'article':article[0]
-        }
-
-        if 'm_race' in args.datasets:            
-            output['levels'] = levels
         
-
-        # add score
-        output['question_scores'] = []
-        output['unlike_question_scores'] = []
-        for i,question in enumerate(output['questions']):
-
-            # like score
-            score = self.compute_score(question,output['labels'])
-            output['question_scores'].append(score)
-
-            # unlike score
-            questions = output['questions'][:]
-            questions.pop(i)
-            score = self.compute_score(hyp=question, refs=questions)
-            output['unlike_question_scores'].append(score)
+        if args.dev: print(decode_questions)
         
-        #
-        output['unlike_label_scores'] = []
-        for i,label in enumerate(output['labels']):
-            # unlike score
-            labels = output['labels'][:]
-            labels.pop(i)
-            score = self.compute_score(hyp=label, refs=labels)
-            output['unlike_label_scores'].append(score)
+        # reference socre
+        for decode_question in decode_questions:
+            self.reference_scorer.add(hyp=decode_question,refs=label_questions)
 
-        output['question_coverage_score'] = compute_coverage_score(output['questions'],output['article'])
-        output['label_coverage_score'] = compute_coverage_score(output['labels'],output['article'])
+        # classmate score
+        if len(decode_questions) > 1:
+            for decode_question in decode_questions[:]:
+                classmate_questions = decode_questions[:]
+                classmate_questions.remove(decode_question)
+                self.classmate_scorer.add(hyp=decode_question,refs=classmate_questions)
 
-        # log
-        log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
-        os.makedirs(log_dir,exist_ok=True)
-        with open(os.path.join(log_dir,'predict.jsonl'),'a',encoding='utf-8') as log_f:
-            output_str = json.dumps(output,ensure_ascii=False) + '\n'
-            log_f.write(output_str)
+        # keyword coverage score
+        self.keyword_coverage_scorer.add(decode_questions,article)
+
+    def test_epoch_end(self,outputs):
+        self.reference_scorer.compute(save_report_dir=self._log_dir,save_file_name='reference_score.txt')
+        self.classmate_scorer.compute(save_report_dir=self._log_dir,save_file_name='classmate_score.txt')
+        self.keyword_coverage_scorer.compute(save_report_dir=self._log_dir,save_file_name='keyword_coverage_score.txt')
                 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
