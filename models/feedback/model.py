@@ -111,10 +111,10 @@ class Model(pl.LightningModule,CustomMixin):
             self.log_dict({'n_loss': n_loss}, prog_bar=True)
         
         return loss
-
-    # def validation_step(self, batch, batch_idx):
-    #     loss = self.training_step(batch, batch_idx)
-    #     self.log('dev_loss',loss,prog_bar=True)
+    
+    def validation_step(self, batch, batch_idx):
+        loss = self.training_step(batch, batch_idx)
+        self.log('dev_loss',loss,prog_bar=True)
     
     def on_test_epoch_start(self):
         self.reference_scorer = SimilarityScorer()
