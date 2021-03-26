@@ -139,7 +139,7 @@ class Model(pl.LightningModule,CustomMixin):
         batch_size = input_ids.shape[0]
         assert batch_size == 1
 
-        decode_questions = self.feedback_generation(input_ids)
+        decode_questions = self.feedback_generation(input_ids,feedback_times=args.gen_n)
         
         # reference socre
         for decode_question in decode_questions:

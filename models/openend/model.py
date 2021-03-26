@@ -105,7 +105,7 @@ class Model(pl.LightningModule):
         decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
         
         if 'm_race' in args.datasets:
-            decode_questions = decode_questions.split('_$')[:3] # get first three
+            decode_questions = decode_questions.split('_$')[:args.gen_n] # get first three
             new_decode_questions = []
             levels = []
             for decode_question in decode_questions:

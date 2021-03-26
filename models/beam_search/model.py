@@ -78,7 +78,7 @@ class Model(pl.LightningModule):
         batch_size = input_ids.shape[0]
         assert batch_size == 1
 
-        num_return_sequences = 3 
+        num_return_sequences = args.gen_n
         sample_outputs = self.model.generate(
             input_ids = input_ids,
             attention_mask=attention_mask,
