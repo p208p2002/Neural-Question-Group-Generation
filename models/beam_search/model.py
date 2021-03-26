@@ -32,6 +32,7 @@ class Model(pl.LightningModule):
     def __init__(self,args=args):
         super().__init__()
         self.save_hyperparameters(args)
+        args = get_args()
         self.tokenizer = get_tokenizer()
         self.model = AutoModelForSeq2SeqLM.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
