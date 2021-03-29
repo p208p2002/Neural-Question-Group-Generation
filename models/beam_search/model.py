@@ -85,7 +85,7 @@ class Model(pl.LightningModule):
             attention_mask=attention_mask,
             max_length=MAX_LENGTH,
             early_stopping=True,
-            num_beams=3,
+            num_beams=num_return_sequences + 2,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences
         )
