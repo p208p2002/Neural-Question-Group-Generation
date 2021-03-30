@@ -152,7 +152,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         all_questions_with_bos = article_spec_questions + cloze_questions
 
         random.shuffle(all_questions_with_bos)
-        all_questions_with_bos =[SEP_TOKEN] + [SEP_TOKEN + q for q in all_questions_with_bos]
+        all_questions_with_bos = [SEP_TOKEN + q for q in all_questions_with_bos]
         label = ' '.join(all_questions_with_bos)
 
         if not self.eval_input: # train

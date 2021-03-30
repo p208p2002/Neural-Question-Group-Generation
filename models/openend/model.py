@@ -81,6 +81,7 @@ class Model(pl.LightningModule):
         if self.tokenizer.bos_token is not None:
             decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
         decode_questions = decode_questions.strip()
+        decode_questions = re.sub("^"+re.escape(SEP_TOKEN),'',decode_questions)
         decode_questions = decode_questions.split(SEP_TOKEN)
         decode_questions = decode_questions[:args.gen_n]
         
