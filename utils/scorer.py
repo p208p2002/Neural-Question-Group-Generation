@@ -16,9 +16,13 @@ class Scorer():
     def _preprocess(self,raw_sentence):
         result = self.nlp(raw_sentence.replace("\n\n",""))
         tokens = []
-        for token in result.sentences[0].tokens:
-            tokens.append(token.text.lower())
-            tokenize_sentence = ' '.join(tokens)
+        try:
+            for token in result.sentences[0].tokens:
+                tokens.append(token.text.lower())
+                tokenize_sentence = ' '.join(tokens)
+        except:
+            print('_preprocess fail, return ""\n',raw_sentence,result)
+            return ""
         return tokenize_sentence
     
     def add(*args,**kwargs):
