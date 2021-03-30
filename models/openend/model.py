@@ -12,23 +12,6 @@ from utils.logger import PredictLogger
 
 args = get_args()
 
-def _parse_question(question):
-    """
-    Args:
-        question: str
-    Return:
-        level,question
-    """
-    level = None
-    try:
-        level = re.match("\\[.*\\]",question).group()
-    except:
-        pass
-    
-    if level is not None:
-        question = question.replace(level,"")
-    return level,question
-
 class Model(pl.LightningModule):
     def __init__(self,args=args):
         super().__init__()
@@ -43,18 +26,12 @@ class Model(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
-        if args.base_model == 'transfo-xl-wt103':
-            loss = outputs['losses'].mean()
-        else:
-            loss = outputs['loss']
+        loss = outputs['loss']
         return loss
     
     def validation_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
-        if args.base_model == 'transfo-xl-wt103':
-            loss = outputs['losses'].mean()
-        else:
-            loss = outputs['loss']
+        loss = outputs['loss']
         self.log('dev_loss',loss)
     
     def on_test_epoch_start(self):
@@ -92,6 +69,7 @@ class Model(pl.LightningModule):
             num_beams=1,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences,
+            
         )
 
         assert len(sample_outputs) == num_return_sequences # 1
@@ -103,20 +81,8 @@ class Model(pl.LightningModule):
         if self.tokenizer.bos_token is not None:
             decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
         decode_questions = decode_questions.strip()
-        decode_questions = re.sub('^'+re.escape('_$'),'',decode_questions)
-        
-        if 'm_race' in args.datasets:
-            decode_questions = decode_questions.split('_$')[:args.gen_n] # get first three
-            new_decode_questions = []
-            levels = []
-            for decode_question in decode_questions:
-                level,question = _parse_question(decode_question)
-                if question =="": continue
-                new_decode_questions.append(question)
-                levels.append(level)
-            decode_questions = new_decode_questions
-        else:
-            decode_questions = decode_questions.split(self.tokenizer.sep_token)
+        decode_questions = decode_questions.split(SEP_TOKEN)
+        decode_questions = decode_questions[:args.gen_n]
         
         # reference socre
         for decode_question in decode_questions:

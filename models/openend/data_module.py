@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader,Dataset,ConcatDataset
 import os
 import json
-from .tokenizer import get_tokenizer,RACE_BOS,_GENERAL_LEVEL,_MIDDLE_LEVEL
+from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
 import pytorch_lightning as pl
@@ -123,13 +123,6 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
-        # self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
-        # self.bos_tokens = [_GENERAL_LEVEL+" ",_GENERAL_LEVEL+" "]
-        # self.bos_tokens = []
-        # for i in range(20):
-            # self.bos_tokens.append("$_[%d]"%i)
-
-        
 
         # select general question
         self.all_general_questions = []
@@ -150,10 +143,6 @@ class MergeRaceDataset(Dataset,UtilsMixin):
     
 
     def __getitem__(self,index):
-        self.bos_tokens = []
-        for i in range(40):
-            self.bos_tokens.append("_$[%d]"%(0))
-
         data = self.datas[index]
         context = data['article']
         article_spec_questions = data['specific_questions']
@@ -163,8 +152,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         all_questions_with_bos = article_spec_questions + cloze_questions
 
         random.shuffle(all_questions_with_bos)
-        all_questions_with_bos = [self.bos_tokens.pop(0)+ q for q in all_questions_with_bos]
-        # all_questions_with_bos.append(self.tokenizer.eos_token)
+        all_questions_with_bos =[SEP_TOKEN] + [SEP_TOKEN + q for q in all_questions_with_bos]
         label = ' '.join(all_questions_with_bos)
 
         if not self.eval_input: # train
