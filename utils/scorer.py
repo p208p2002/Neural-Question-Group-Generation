@@ -5,9 +5,9 @@ import re
 import stanza
 
 class Scorer():
-    def __init__(self,preprocess=True):
+    def __init__(self,preprocess=True,metrics_to_omit=["CIDEr"]):
         self.preprocess = preprocess
-        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True,metrics_to_omit=["CIDEr"])
+        self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True,metrics_to_omit=metrics_to_omit)
         self.score = defaultdict(lambda : 0.0)
         self.len = 0
         if self.preprocess:

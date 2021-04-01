@@ -16,7 +16,7 @@ class GAOptimizer():
         self.condicate_questions = None
         self.context = None
         self.coverage_scorer = CoverageScorer()
-        self.similarity_scorer = SimilarityScorer()
+        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR","ROUGE_L"])
         self.model=ga(
             function=self.fitness_function,
             dimension=candicate_pool_size,
@@ -139,7 +139,7 @@ class GreedyOptimizer():
         self.condicate_questions = None
         self.context = None
         self.coverage_scorer = CoverageScorer()
-        self.similarity_scorer = SimilarityScorer()
+        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR","ROUGE_L"])
 
     def optimize(self,condicate_questions,context,*args,**kwargs):
         """
