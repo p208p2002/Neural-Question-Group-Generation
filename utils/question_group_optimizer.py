@@ -127,4 +127,44 @@ class FirstNOptimizer():
     def optimize(self,condicate_questions,*args,**kwargs):
         return condicate_questions[:self.target_question_qroup_size]
 
-# class GreedyOptimizer():
+class GreedyOptimizer():
+    def __init__(self,candicate_pool_size,target_question_qroup_size):
+        """
+        Args:
+            candicate_pool_size: how many question in the candicate pool, refs to encoding size
+            target_question_qroup_size: the questions number we execpt to pick
+        """
+        assert target_question_qroup_size <= candicate_pool_size,'candicate_pool_size should smaller than target_question_qroup_size'
+        self.target_question_qroup_size = target_question_qroup_size
+        self.condicate_questions = None
+        self.context = None
+        self.coverage_scorer = CoverageScorer()
+        self.similarity_scorer = SimilarityScorer()
+
+    def optimize(self,condicate_questions,context,*args,**kwargs):
+        """
+        Args:
+            condicate_questions: the condicate questions
+            context: context that used to gen condicate questions
+        """
+        question_with_score = {}
+        for question in condicate_questions:
+            # keyword_coverage
+            self.coverage_scorer.clean()
+            self.coverage_scorer.add([question],context)
+            keyword_coverage_score = self.coverage_scorer.compute(return_score=True)['keyword_coverage']
+            
+            # classmate_similarity_score
+            self.similarity_scorer.clean()
+            classmate_questions = condicate_questions[:]
+            classmate_questions.remove(question)
+            if len(classmate_questions) > 1:
+                self.similarity_scorer.add(hyp=question,refs=classmate_questions)
+            classmate_similarity_score = self.similarity_scorer.compute(return_score=True).get('Bleu_2',0.0)
+            
+            score = keyword_coverage_score + (1.0-classmate_similarity_score)
+            question_with_score[question] = score
+            
+        question_scores = sorted(question_with_score.items(), key=lambda x:x[-1],reverse=True)
+        return [q[0] for q in question_scores][:self.target_question_qroup_size]
+    

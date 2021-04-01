@@ -11,7 +11,7 @@ from .config import *
 # from utils import compute_coverage_score
 from utils.scorer import SimilarityScorer,CoverageScorer
 from utils.logger import PredictLogger
-from utils.question_group_optimizer import GAOptimizer,RandomOptimizer,FirstNOptimizer
+from utils.question_group_optimizer import GAOptimizer,RandomOptimizer,FirstNOptimizer,GreedyOptimizer
 
 args = get_args()
 
@@ -130,6 +130,8 @@ class Model(pl.LightningModule,CustomMixin):
             self.qgg_optimizer = RandomOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
         elif args.qgg_optim == 'first-n':
             self.qgg_optimizer = FirstNOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'greedy':
+            self.qgg_optimizer = GreedyOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
         
         
     def test_step(self, batch, batch_idx):
