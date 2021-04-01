@@ -11,6 +11,7 @@ from .config import *
 # from utils import compute_coverage_score
 from utils.scorer import SimilarityScorer,CoverageScorer
 from utils.logger import PredictLogger
+from utils.question_group_optimizer import GAOptimizer
 
 args = get_args()
 
@@ -122,6 +123,8 @@ class Model(pl.LightningModule,CustomMixin):
         self.keyword_coverage_scorer = CoverageScorer()
         self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
         self.predict_logger = PredictLogger(save_dir=self._log_dir)
+
+        self.qgg_optimizer = GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
         
     def test_step(self, batch, batch_idx):
         # tensor
@@ -140,6 +143,7 @@ class Model(pl.LightningModule,CustomMixin):
         assert batch_size == 1
 
         decode_questions = self.feedback_generation(input_ids,feedback_times=args.gen_n)
+        decode_questions = self.qgg_optimizer.optimize(decode_questions,article)
         
         # reference socre
         for decode_question in decode_questions:
