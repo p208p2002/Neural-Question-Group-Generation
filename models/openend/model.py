@@ -9,6 +9,7 @@ import json
 from .config import *
 from utils.scorer import SimilarityScorer, CoverageScorer
 from utils.logger import PredictLogger
+from utils.question_group_optimizer import GAOptimizer,RandomOptimizer,FirstNOptimizer,GreedyOptimizer
 
 args = get_args()
 
@@ -40,6 +41,15 @@ class Model(pl.LightningModule):
         self.keyword_coverage_scorer = CoverageScorer()
         self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
         self.predict_logger = PredictLogger(save_dir=self._log_dir)
+
+        if args.qgg_optim == 'ga':
+            self.qgg_optimizer = GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'random':
+            self.qgg_optimizer = RandomOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'first-n':
+            self.qgg_optimizer = FirstNOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'greedy':
+            self.qgg_optimizer = GreedyOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
         
     def test_step(self, batch, batch_idx):
         # tensor
@@ -84,6 +94,7 @@ class Model(pl.LightningModule):
         decode_questions = re.sub("^"+re.escape(SEP_TOKEN),'',decode_questions)
         decode_questions = decode_questions.split(SEP_TOKEN)
         decode_questions = decode_questions[:args.gen_n]
+        decode_questions = self.qgg_optimizer.optimize(condicate_questions=decode_questions,context=article)
         
         # reference socre
         for decode_question in decode_questions:
