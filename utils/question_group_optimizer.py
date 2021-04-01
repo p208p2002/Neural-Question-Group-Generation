@@ -21,7 +21,7 @@ class GAOptimizer():
             function=self.fitness_function,
             dimension=candicate_pool_size,
             variable_type='bool',
-            convergence_curve=True,
+            convergence_curve=False,
             algorithm_parameters = {
                 'max_num_iteration': 32,
                 'population_size':12,
