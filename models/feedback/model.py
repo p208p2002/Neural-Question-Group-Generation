@@ -11,7 +11,7 @@ from .config import *
 # from utils import compute_coverage_score
 from utils.scorer import SimilarityScorer,CoverageScorer
 from utils.logger import PredictLogger
-from utils.question_group_optimizer import GAOptimizer
+from utils.question_group_optimizer import GAOptimizer,RandomOptimizer,FirstNOptimizer
 
 args = get_args()
 
@@ -124,7 +124,13 @@ class Model(pl.LightningModule,CustomMixin):
         self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
         self.predict_logger = PredictLogger(save_dir=self._log_dir)
 
-        self.qgg_optimizer = GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        if args.qgg_optim == 'ga':
+            self.qgg_optimizer = GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'random':
+            self.qgg_optimizer = RandomOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'first-n':
+            self.qgg_optimizer = FirstNOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        
         
     def test_step(self, batch, batch_idx):
         # tensor
@@ -143,7 +149,7 @@ class Model(pl.LightningModule,CustomMixin):
         assert batch_size == 1
 
         decode_questions = self.feedback_generation(input_ids,feedback_times=args.gen_n)
-        decode_questions = self.qgg_optimizer.optimize(decode_questions,article)
+        decode_questions = self.qgg_optimizer.optimize(condicate_questions=decode_questions,context=article)
         
         # reference socre
         for decode_question in decode_questions:
