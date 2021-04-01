@@ -13,6 +13,11 @@ class Scorer():
         if self.preprocess:
             self.nlp = stanza.Pipeline(lang='en', processors='tokenize', tokenize_no_ssplit=True, verbose=False)
     
+    def __del__(self):
+        del self.nlgeval
+        if self.preprocess:
+            del self.nlp
+    
     def _preprocess(self,raw_sentence):
         result = self.nlp(raw_sentence.replace("\n\n",""))
         tokens = []
@@ -25,20 +30,29 @@ class Scorer():
             return ""
         return tokenize_sentence
     
+    def clean(self):
+        self.score = defaultdict(lambda : 0.0)
+        self.len = 0
+    
     def add(*args,**kwargs):
         assert False,'no implement error'
 
-    def compute(self,save_report_dir=None,save_file_name='score.txt'):
+    def compute(self,save_report_dir=None,save_file_name='score.txt',return_score=False):
+        # 
+        out_score = {}
+        
         if save_report_dir is not None:
             os.makedirs(save_report_dir,exist_ok=True)
             save_score_report_path = os.path.join(save_report_dir,save_file_name)
             score_f = open(save_score_report_path,'w',encoding='utf-8')
-            print(save_score_report_path)
         for score_key in self.score.keys():
             _score = self.score[score_key]/self.len
-            print(score_key,_score)
+            out_score[score_key] = _score
             if save_report_dir is not None:
                 score_f.write("%s\t%3.5f\n"%(score_key,_score))
+        
+        if return_score:
+            return out_score
     
 class SimilarityScorer(Scorer):     
     def add(self,hyp,refs):
@@ -46,17 +60,21 @@ class SimilarityScorer(Scorer):
         if self.preprocess:
             hyp = self._preprocess(hyp)
             refs = [self._preprocess(ref) for ref in refs]
-        score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
-        for score_key in score.keys():
-            self.score[score_key] += score[score_key]
+        _score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
+        for score_key in _score.keys():
+            self.score[score_key] += _score[score_key]
         self.len += 1
 
 class CoverageScorer(Scorer):
     def __init__(self,preprocess=True):
         super().__init__(preprocess=preprocess)
-        stop_words_en = open('utils/stopwords-en.txt','r',encoding='utf-8').read().split()
-        stop_words_sign = open('utils/stopwords-sign.txt','r',encoding='utf-8').read().split()
-        self.stop_words = stop_words_en + stop_words_sign
+        self.stop_words_en = open('/user_data/MasterQG/utils/stopwords-en.txt','r',encoding='utf-8')
+        self.stop_words_sign = open('/user_data/MasterQG/utils/stopwords-sign.txt','r',encoding='utf-8')
+        self.stop_words = self.stop_words_en.read().split() + self.stop_words_sign.read().split()
+    
+    def __del__(self):
+        self.stop_words_en.close()
+        self.stop_words_sign.close()
 
     def _compute_coverage_score(self,sents:list,article:str):
         sent = ' '.join(sents)
