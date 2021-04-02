@@ -25,9 +25,9 @@ class GAOptimizer():
             algorithm_parameters = {
                 'max_num_iteration': 32,
                 'population_size':12,
-                'mutation_probability':0.20,
-                'elit_ratio': 0.01,
-                'crossover_probability': 0.4,
+                'mutation_probability':0.2,
+                'elit_ratio': 0.2,
+                'crossover_probability': 0.6,
                 'parents_portion': 0.5,
                 'crossover_type':'two_point',
                 'max_iteration_without_improv':8
