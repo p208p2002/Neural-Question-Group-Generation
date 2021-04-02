@@ -29,7 +29,7 @@ class GAOptimizer():
                 'elit_ratio': 0.01,
                 'crossover_probability': 0.4,
                 'parents_portion': 0.5,
-                'crossover_type':'uniform',
+                'crossover_type':'two_point',
                 'max_iteration_without_improv':8
             }
         )
