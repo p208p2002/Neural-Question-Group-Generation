@@ -75,10 +75,8 @@ class GAOptimizer():
                 
         # punishment if count_pick not equal to question_group_size
         count_pick = (genome==True).sum()
-        if count_pick != self.target_question_qroup_size:
-            score = score*0.5
-
-        return score*-1
+        score_weight = 1 - (abs(self.target_question_qroup_size - count_pick)/self.target_question_qroup_size)
+        return score*score_weight*-1
     
     def decode(self,genome):
         pick_questions = []
