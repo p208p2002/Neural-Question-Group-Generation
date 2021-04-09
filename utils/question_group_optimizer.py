@@ -69,14 +69,14 @@ class GAOptimizer():
             diversity_score = 0.5
     
         score = \
-            keyword_coverage_score*0.45\
-            + (1-classmate_similarity_score)*0.45\
-            + diversity_score*0.1
+            keyword_coverage_score\
+            + (1-classmate_similarity_score)\
+            + diversity_score
                 
         # punishment if count_pick not equal to question_group_size
         count_pick = (genome==True).sum()
-        score_weight = 1 - (abs(self.target_question_qroup_size - count_pick)/self.target_question_qroup_size)
-        return score*score_weight*-1
+        punish_weight = 1 - (abs(self.target_question_qroup_size - count_pick)/self.target_question_qroup_size)
+        return score*punish_weight*-1
     
     def decode(self,genome):
         pick_questions = []
