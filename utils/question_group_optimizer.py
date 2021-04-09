@@ -17,6 +17,7 @@ class GAOptimizer():
         self.context = None
         self.coverage_scorer = CoverageScorer()
         self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR","ROUGE_L"])
+        self.candicate_pool_size = candicate_pool_size
         self.model=ga(
             function=self.fitness_function,
             dimension=candicate_pool_size,
@@ -75,7 +76,7 @@ class GAOptimizer():
                 
         # punishment if count_pick not equal to question_group_size
         count_pick = (genome==True).sum()
-        punish_weight = 1 - (abs(self.target_question_qroup_size - count_pick)/self.target_question_qroup_size)
+        punish_weight = 1 - (abs(self.target_question_qroup_size - count_pick)/self.candicate_pool_size)
         return score*punish_weight*-1
     
     def decode(self,genome):
