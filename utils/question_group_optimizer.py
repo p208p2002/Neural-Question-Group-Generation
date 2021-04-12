@@ -93,6 +93,10 @@ class GAOptimizer():
             condicate_questions: the condicate questions
             context: context that used to gen condicate questions
         """
+        while(len(condicate_questions) < self.candicate_pool_size):
+            condicate_questions.append("")
+            print("Warning!!: `len(condicate_questions) < self.candicate_pool_size`")
+
         self.context = context
         self.condicate_questions = condicate_questions
         self.model.run()
