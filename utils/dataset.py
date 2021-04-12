@@ -7,10 +7,10 @@ def data_filter(data_lines):
         data = json.loads(data_line)
         article_spec_questions = data['specific_questions'][:]
         cloze_questions = data['cloze_questions'][:]
-        # if len(article_spec_questions) == 0 and len(cloze_questions) == 0: 
-        #     continue
+        
         if len(article_spec_questions) == 0: 
             continue
         
+        data['select_questions'] = article_spec_questions + cloze_questions
         new_data_list.append(data)
     return new_data_list

@@ -149,7 +149,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 self.dataset_name,
                 model_input['input_ids'],
                 model_input['attention_mask'],
-                data['specific_questions']+data['cloze_questions'],
+                data['select_questions'],
                 data['article']
             )
     
