@@ -13,6 +13,8 @@ def data_filter(data_lines):
         general_questions = data['general_questions'][:]
         
         data['select_questions'] = article_spec_questions + cloze_questions + general_questions
+        if (len(data['select_questions'])==0):
+            continue
         
         # combine question and answer 
         for i,question in enumerate(data['select_questions']):
