@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 import re
 from .config import *
 import random
+from utils.dataset import data_filter
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -123,32 +124,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
-        # self.bos_tokens = [_GENERAL_LEVEL,_MIDDLE_LEVEL]
-        # self.bos_tokens = [_GENERAL_LEVEL+" ",_GENERAL_LEVEL+" "]
-        # self.bos_tokens = []
-        # for i in range(20):
-            # self.bos_tokens.append("$_[%d]"%i)
-
-        
-
-        # select general question
-        self.all_general_questions = []
-        new_datas = []
-        for data_line in self.data_lines:
-            data = json.loads(data_line)
-            article_spec_questions = data['specific_questions'][:]
-            cloze_questions = data['cloze_questions'][:]
-            # if len(article_spec_questions) == 0 and len(cloze_questions) == 0: 
-            #     continue
-            if len(article_spec_questions) == 0: 
-                continue
-            
-            # data['general_questions']
-            
-            new_datas.append(data)
-        self.datas = new_datas
+        self.datas = data_filter(self.data_lines)
     
-
     def __getitem__(self,index):
 
         data = self.datas[index]

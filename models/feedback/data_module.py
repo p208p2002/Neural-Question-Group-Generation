@@ -9,6 +9,7 @@ import re
 from .config import *
 import random
 from transformers.models.bart.modeling_bart import shift_tokens_right
+from utils.dataset import data_filter
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -139,21 +140,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
         self.sep_token = self.tokenizer.sep_token
 
-        # select general question
-        self.all_general_questions = []
-        new_datas = []
-        for data_line in self.data_lines:
-            data = json.loads(data_line)
-            article_spec_questions = data['specific_questions'][:]
-            cloze_questions = data['cloze_questions'][:]
-            # if len(article_spec_questions) == 0 and len(cloze_questions) == 0: 
-            #     continue
-            if len(article_spec_questions) == 0: 
-                continue
-            
-            new_datas.append(data)
-        self.datas = new_datas
-
+        self.datas = data_filter(self.data_lines)
 
     def __getitem__(self,index):
         data = self.datas[index]
