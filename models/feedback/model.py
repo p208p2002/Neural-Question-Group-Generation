@@ -33,7 +33,7 @@ class CustomMixin():
                 attention_mask=torch.LongTensor([1]*len(input_ids)).unsqueeze(0).to(device),
                 max_length=MAX_LENGTH,
                 early_stopping=True,
-                temperature=0.85,
+                temperature=1.0,
                 do_sample=True,
                 top_p=0.9,
                 top_k=10,

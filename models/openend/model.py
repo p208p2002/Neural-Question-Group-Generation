@@ -71,7 +71,7 @@ class Model(pl.LightningModule):
         sample_outputs = self.model.generate(
             input_ids = input_ids,
             attention_mask=attention_mask,
-            max_length=int(MAX_LENGTH/2),
+            max_length=MAX_LENGTH,
             early_stopping=True,
             temperature=0.85,
             do_sample=True,

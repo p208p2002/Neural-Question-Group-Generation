@@ -130,12 +130,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
     def __getitem__(self,index):
         data = self.datas[index]
         context = data['article']
-        article_spec_questions = data['specific_questions']
-        cloze_questions = data['cloze_questions']
-
-
-        all_questions_with_bos = article_spec_questions + cloze_questions
-
+        
+        all_questions_with_bos = data['select_questions'][:]
         random.shuffle(all_questions_with_bos)
         all_questions_with_bos = [SEP_TOKEN + q for q in all_questions_with_bos]
         label = ' '.join(all_questions_with_bos)
