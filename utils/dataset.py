@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 import json
+import re
 
 def data_filter(data_lines):
     answer_tag = ["A","B","C","D"]
@@ -21,6 +22,7 @@ def data_filter(data_lines):
             q_id = questions.index(question)
             a_id = answer_tag.index(data['answers'][q_id])
             answer_text = data['options'][q_id][a_id]
+            question = re.sub(r"www\..*\.com","",question)
             label_format = f"Q:{question} A:{answer_text}"
 
             # override select_questions
