@@ -3,21 +3,35 @@ from geneticalgorithm import geneticalgorithm as ga
 from .scorer import CoverageScorer,SimilarityScorer
 import re
 import random
+from loguru import logger
 
 def setup_optimizer(func):
     def wrapper(*_args,**_kwargs):
         self = _args[0]
         args = self.hparams
-        if args.qgg_optim == 'ga':
-            self.qgg_optimizer = GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
-        elif args.qgg_optim == 'random':
-            self.qgg_optimizer = RandomOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
-        elif args.qgg_optim == 'first-n':
-            self.qgg_optimizer = FirstNOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
-        elif args.qgg_optim == 'greedy':
-            self.qgg_optimizer = GreedyOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        self.qgg_optimizers = []
+        assert len(args.qgg_optims) >= 1,'must spec at least one qgg_optim'
+        for qgg_optim in args.qgg_optims:
+            if qgg_optim == 'ga':
+                self.qgg_optimizers.append(GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n))
+            elif qgg_optim == 'random':
+                self.qgg_optimizers.append(RandomOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n))
+            elif qgg_optim == 'first-n':
+                self.qgg_optimizers.append(FirstNOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n))
+            elif qgg_optim == 'greedy':
+                self.qgg_optimizers.append(GreedyOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n))
+            else:
+                raise Exception("no qgg_optim match")
         return func(*_args,**_kwargs)
     return wrapper
+
+def optims_runner(optims,optim_names,condicate_questions,context):
+    results = []
+    for optim,opt_name in zip(optims,optim_names):
+        result = optim.optimize(condicate_questions=condicate_questions,context=context)
+        logger.debug(f"opt_name:{opt_name}, result:{result}")
+        results.append(result)
+    return results
 
 class GAOptimizer():
     def __init__(self,candicate_pool_size,target_question_qroup_size):

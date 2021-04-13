@@ -3,23 +3,85 @@ from collections import defaultdict
 import os
 import re
 import stanza
+from loguru import logger
+import copy
 
 def setup_scorer(func):
-    def wrapper(*args,**kwargs):
-        self = args[0]
-        self.reference_scorer = SimilarityScorer()
-        self.classmate_scorer = SimilarityScorer()
-        self.keyword_coverage_scorer = CoverageScorer()
-        return func(*args,**kwargs)
+    def wrapper(*_args,**_kwargs):
+        self = _args[0]
+        args = self.hparams
+        
+        # we set scoers for each optim
+        self.scorers = []
+        count_qgg_optims = len(args.qgg_optims)
+        for i in range(count_qgg_optims):
+            self.scorers.append({
+                'reference_scorer':SimilarityScorer(),
+                'classmate_scorer':SimilarityScorer(),
+                'keyword_coverage_scorer':CoverageScorer()
+            })
+
+        return func(*_args,**_kwargs)
     return wrapper
+
+def scorers_runner(scoers,optim_names,optims_results,label_questions,article,predict_logger):
+    assert len(scoers) == len(optim_names)
+    assert len(scoers) == len(optims_results),f"scoers:{scoers}, optims_results:{optims_results}"
+
+    _log_dict = {
+        'article':article,
+        'label_questions':label_questions,
+    }
+
+    for scorer,optim_name,decode_questions in zip(scoers,optim_names,optims_results):
+        # save optims_results for log
+        _log_dict[optim_name] = copy.deepcopy(decode_questions)
+
+        #
+        reference_scorer = scorer['reference_scorer']
+        classmate_scorer = scorer['classmate_scorer']
+        keyword_coverage_scorer = scorer['keyword_coverage_scorer']
+
+        #
+        logger.debug(f"optim_name:{optim_name}")
+        logger.debug(f"reference_scorer len:{reference_scorer.len}")
+        logger.debug(f"classmate_scorer len:{classmate_scorer.len}")
+        logger.debug(f"keyword_coverage_scorer len:{keyword_coverage_scorer.len}")
+
+        #
+        logger.debug(f"decode_questions:{decode_questions}")
+
+        # reference socre
+        for decode_question in decode_questions:
+            reference_scorer.add(hyp=decode_question,refs=label_questions)
+        
+        # classmate score
+        if len(decode_questions) > 1:
+            for decode_question in decode_questions[:]:
+                classmate_questions = decode_questions[:]
+                classmate_questions.remove(decode_question)
+                classmate_scorer.add(hyp=decode_question,refs=classmate_questions)
+        # keyword coverage score
+        keyword_coverage_scorer.add(decode_questions,article)
+    
+    # wirte log
+    predict_logger.log(_log_dict)
 
 def compute_score(func):
     def wrapper(*args,**kwargs):
         self = args[0]
         self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
-        self.reference_scorer.compute(save_report_dir=self._log_dir,save_file_name='reference_score.txt')
-        self.classmate_scorer.compute(save_report_dir=self._log_dir,save_file_name='classmate_score.txt')
-        self.keyword_coverage_scorer.compute(save_report_dir=self._log_dir,save_file_name='keyword_coverage_score.txt')
+        assert len(self.scorers) == len(self.hparams.qgg_optims)
+        for scorer,opt_name in zip(self.scorers,self.hparams.qgg_optims):
+            #
+            reference_scorer = scorer['reference_scorer']
+            classmate_scorer = scorer['classmate_scorer']
+            keyword_coverage_scorer = scorer['keyword_coverage_scorer']
+
+            #
+            reference_scorer.compute(save_report_dir=os.path.join(self._log_dir,opt_name),save_file_name='reference_score.txt')
+            classmate_scorer.compute(save_report_dir=os.path.join(self._log_dir,opt_name),save_file_name='classmate_score.txt')
+            keyword_coverage_scorer.compute(save_report_dir=os.path.join(self._log_dir,opt_name),save_file_name='keyword_coverage_score.txt')
         return func(*args,**kwargs)
     return wrapper
 
@@ -45,7 +107,7 @@ class Scorer():
                 tokens.append(token.text.lower())
                 tokenize_sentence = ' '.join(tokens)
         except:
-            print('_preprocess fail, return ""\n',raw_sentence,result)
+            logger.debug(f'preprocess fail, return "" raw_sentence:{raw_sentence} result:{result}')
             return ""
         return tokenize_sentence
     
