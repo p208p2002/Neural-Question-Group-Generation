@@ -111,6 +111,14 @@ class Model(pl.LightningModule):
             decode_questions = decode_questions.split(self.tokenizer.sep_token)
         
         if args.dev: print(decode_questions)
+
+        # qa pair with format
+        decode_questions_with_format = decode_questions[:]
+        label_questions_with_format = label_questions[:]
+
+        # clean qa pair format
+        decode_questions = [re.sub("Q:|A:","",q) for q in decode_questions]
+        label_questions = [re.sub("Q:|A:","",q) for q in label_questions]
         
         decode_questions = self.qgg_optimizer.optimize(condicate_questions=decode_questions,context=article)
 
@@ -131,8 +139,8 @@ class Model(pl.LightningModule):
         # predict log
         self.predict_logger.log({
             'article':article,
-            'label_questions':label_questions,
-            'decode_questions':decode_questions
+            'label_questions':label_questions_with_format,
+            'decode_questions':decode_questions_with_format
         })
 
     @compute_score

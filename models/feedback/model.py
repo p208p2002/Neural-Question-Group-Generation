@@ -139,6 +139,15 @@ class Model(pl.LightningModule,CustomMixin):
         assert batch_size == 1
 
         decode_questions = self.feedback_generation(input_ids,feedback_times=args.gen_n)
+        
+        # qa pair with format
+        decode_questions_with_format = decode_questions[:]
+        label_questions_with_format = label_questions[:]
+
+        # clean qa pair format
+        decode_questions = [re.sub("Q:|A:","",q) for q in decode_questions]
+        label_questions = [re.sub("Q:|A:","",q) for q in label_questions]
+
         decode_questions = self.qgg_optimizer.optimize(condicate_questions=decode_questions,context=article)
         
         # reference socre
@@ -158,8 +167,8 @@ class Model(pl.LightningModule,CustomMixin):
         # predict log
         self.predict_logger.log({
             'article':article,
-            'label_questions':label_questions,
-            'decode_questions':decode_questions
+            'label_questions':label_questions_with_format,
+            'decode_questions':decode_questions_with_format
         })
        
     @compute_score
