@@ -1,5 +1,13 @@
 import os
 
+def setup_logger(func):
+    def wrapper(*args,**kwargs):
+        self = args[0]
+        self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
+        self.predict_logger = PredictLogger(save_dir=self._log_dir)
+        return func(*args,**kwargs)
+    return wrapper
+
 class PredictLogger():
     def __init__(self, save_dir):
         save_dir = os.path.join(save_dir,'predicts')

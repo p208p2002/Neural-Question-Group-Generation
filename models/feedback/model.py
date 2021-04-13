@@ -8,10 +8,9 @@ import re
 import os
 import json
 from .config import *
-# from utils import compute_coverage_score
-from utils.scorer import SimilarityScorer,CoverageScorer
-from utils.logger import PredictLogger
-from utils.question_group_optimizer import GAOptimizer,RandomOptimizer,FirstNOptimizer,GreedyOptimizer
+from utils.scorer import setup_scorer,compute_score
+from utils.logger import setup_logger
+from utils.qgg_optimizer import setup_optimizer
 
 args = get_args()
 
@@ -117,22 +116,11 @@ class Model(pl.LightningModule,CustomMixin):
         loss = self.training_step(batch, batch_idx)
         self.log('dev_loss',loss,prog_bar=True)
     
+    @setup_optimizer
+    @setup_logger
+    @setup_scorer
     def on_test_epoch_start(self):
-        self.reference_scorer = SimilarityScorer()
-        self.classmate_scorer = SimilarityScorer()
-        self.keyword_coverage_scorer = CoverageScorer()
-        self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
-        self.predict_logger = PredictLogger(save_dir=self._log_dir)
-
-        if args.qgg_optim == 'ga':
-            self.qgg_optimizer = GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
-        elif args.qgg_optim == 'random':
-            self.qgg_optimizer = RandomOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
-        elif args.qgg_optim == 'first-n':
-            self.qgg_optimizer = FirstNOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
-        elif args.qgg_optim == 'greedy':
-            self.qgg_optimizer = GreedyOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
-        
+        pass
         
     def test_step(self, batch, batch_idx):
         # tensor
@@ -174,10 +162,9 @@ class Model(pl.LightningModule,CustomMixin):
             'decode_questions':decode_questions
         })
        
+    @compute_score
     def test_epoch_end(self,outputs):
-        self.reference_scorer.compute(save_report_dir=self._log_dir,save_file_name='reference_score.txt')
-        self.classmate_scorer.compute(save_report_dir=self._log_dir,save_file_name='classmate_score.txt')
-        self.keyword_coverage_scorer.compute(save_report_dir=self._log_dir,save_file_name='keyword_coverage_score.txt')
-
+        pass
+        
     def configure_optimizers(self):
         return self.opt

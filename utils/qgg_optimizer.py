@@ -4,6 +4,21 @@ from .scorer import CoverageScorer,SimilarityScorer
 import re
 import random
 
+def setup_optimizer(func):
+    def wrapper(*_args,**_kwargs):
+        self = _args[0]
+        args = self.hparams
+        if args.qgg_optim == 'ga':
+            self.qgg_optimizer = GAOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'random':
+            self.qgg_optimizer = RandomOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'first-n':
+            self.qgg_optimizer = FirstNOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        elif args.qgg_optim == 'greedy':
+            self.qgg_optimizer = GreedyOptimizer(candicate_pool_size=args.gen_n,target_question_qroup_size=args.pick_n)
+        return func(*_args,**_kwargs)
+    return wrapper
+
 class GAOptimizer():
     def __init__(self,candicate_pool_size,target_question_qroup_size):
         """

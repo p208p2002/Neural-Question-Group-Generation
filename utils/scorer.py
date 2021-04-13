@@ -4,6 +4,25 @@ import os
 import re
 import stanza
 
+def setup_scorer(func):
+    def wrapper(*args,**kwargs):
+        self = args[0]
+        self.reference_scorer = SimilarityScorer()
+        self.classmate_scorer = SimilarityScorer()
+        self.keyword_coverage_scorer = CoverageScorer()
+        return func(*args,**kwargs)
+    return wrapper
+
+def compute_score(func):
+    def wrapper(*args,**kwargs):
+        self = args[0]
+        self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
+        self.reference_scorer.compute(save_report_dir=self._log_dir,save_file_name='reference_score.txt')
+        self.classmate_scorer.compute(save_report_dir=self._log_dir,save_file_name='classmate_score.txt')
+        self.keyword_coverage_scorer.compute(save_report_dir=self._log_dir,save_file_name='keyword_coverage_score.txt')
+        return func(*args,**kwargs)
+    return wrapper
+
 class Scorer():
     def __init__(self,preprocess=True,metrics_to_omit=["CIDEr"]):
         self.preprocess = preprocess
