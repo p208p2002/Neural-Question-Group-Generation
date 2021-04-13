@@ -5,7 +5,7 @@ import re
 import random
 from loguru import logger
 
-def setup_optimizer(func):
+def setup_optim(func):
     def wrapper(*_args,**_kwargs):
         self = _args[0]
         args = self.hparams

@@ -10,7 +10,7 @@ import json
 from .config import *
 from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
-from utils.qgg_optimizer import setup_optimizer,optims_runner
+from utils.qgg_optimizer import setup_optim,optims_runner
 
 args = get_args()
 
@@ -116,7 +116,7 @@ class Model(pl.LightningModule,CustomMixin):
         loss = self.training_step(batch, batch_idx)
         self.log('dev_loss',loss,prog_bar=True)
     
-    @setup_optimizer
+    @setup_optim
     @setup_logger
     @setup_scorer
     def on_test_epoch_start(self):
