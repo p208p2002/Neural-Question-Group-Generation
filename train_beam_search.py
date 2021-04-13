@@ -5,6 +5,7 @@ from models.beam_search.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 from models.beam_search.config import GPUS,ACCELERATOR
+from copy import deepcopy
 args = argparser.get_args()
 
 if __name__ == "__main__":
@@ -30,6 +31,12 @@ if __name__ == "__main__":
         print('load from checkpoint')
         model = Model.load_from_checkpoint(args.from_checkpoint)
 
+    # train
     if args.run_test == False:
+        tuner = pl.tuner.tuning.Tuner(deepcopy(trainer))
+        new_batch_size = tuner.scale_batch_size(model, datamodule=dm)
+        del tuner
+        model.hparams.batch_size = new_batch_size
         trainer.fit(model,datamodule=dm)
+
     trainer.test(model if args.run_test else None,datamodule=dm,ckpt_path=None if args.dev else 'best')

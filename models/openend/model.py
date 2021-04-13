@@ -7,9 +7,9 @@ import re
 import os
 import json
 from .config import *
-from utils.scorer import setup_scorer,compute_score
+from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
-from utils.qgg_optimizer import setup_optimizer
+from utils.qgg_optimizer import setup_optimizer,optims_runner
 
 args = get_args()
 
@@ -85,36 +85,25 @@ class Model(pl.LightningModule):
         decode_questions = decode_questions.split(SEP_TOKEN)
         decode_questions = decode_questions[:args.gen_n]
 
-        # qa pair with format
-        decode_questions_with_format = decode_questions[:]
-        label_questions_with_format = label_questions[:]
-
         # clean qa pair format
-        decode_questions = [re.sub("Q:|A:","",q) for q in decode_questions]
-        label_questions = [re.sub("Q:|A:","",q) for q in label_questions]
+        decode_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in decode_questions]
+        label_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in label_questions]
 
-        decode_questions = self.qgg_optimizer.optimize(condicate_questions=decode_questions,context=article)
-        
-        # reference socre
-        for decode_question in decode_questions:
-            self.reference_scorer.add(hyp=decode_question,refs=label_questions)
+        optims_results = optims_runner(
+            optims=self.qgg_optimizers,
+            optim_names=args.qgg_optims,
+            condicate_questions=decode_questions,
+            context=article
+        )
 
-        # classmate score
-        if len(decode_questions) > 1:
-            for decode_question in decode_questions[:]:
-                classmate_questions = decode_questions[:]
-                classmate_questions.remove(decode_question)
-                self.classmate_scorer.add(hyp=decode_question,refs=classmate_questions)
-
-        # keyword coverage score
-        self.keyword_coverage_scorer.add(decode_questions,article)
-
-        # predict log
-        self.predict_logger.log({
-            'article':article,
-            'label_questions':label_questions_with_format,
-            'decode_questions':decode_questions_with_format
-        })
+        scorers_runner(
+            scoers=self.scorers,
+            optim_names=args.qgg_optims,
+            optims_results=optims_results,
+            label_questions=label_questions,
+            article=article,
+            predict_logger = self.predict_logger
+        )
 
     @compute_score
     def test_epoch_end(self,outputs):
