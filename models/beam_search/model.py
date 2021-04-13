@@ -7,8 +7,9 @@ import re
 import os
 import json
 from .config import *
-from utils.scorer import SimilarityScorer, CoverageScorer
-from utils.logger import PredictLogger
+from utils.scorer import setup_scorer,compute_score
+from utils.logger import setup_logger
+from utils.qgg_optimizer import setup_optimizer
 args = get_args()
 
 def _parse_question(question):
@@ -56,12 +57,11 @@ class Model(pl.LightningModule):
             loss = outputs['loss']
         self.log('dev_loss',loss)
     
+    @setup_optimizer
+    @setup_logger
+    @setup_scorer
     def on_test_epoch_start(self):
-        self.reference_scorer = SimilarityScorer()
-        self.classmate_scorer = SimilarityScorer()
-        self.keyword_coverage_scorer = CoverageScorer()
-        self._log_dir = os.path.join(self.trainer.default_root_dir,'dev') if self.trainer.log_dir is None else self.trainer.log_dir
-        self.predict_logger = PredictLogger(save_dir=self._log_dir)
+        pass
     
     def test_step(self, batch, batch_idx):
         # tensor
@@ -112,6 +112,8 @@ class Model(pl.LightningModule):
         
         if args.dev: print(decode_questions)
         
+        decode_questions = self.qgg_optimizer.optimize(condicate_questions=decode_questions,context=article)
+
         # reference socre
         for decode_question in decode_questions:
             self.reference_scorer.add(hyp=decode_question,refs=label_questions)
@@ -133,10 +135,9 @@ class Model(pl.LightningModule):
             'decode_questions':decode_questions
         })
 
+    @compute_score
     def test_epoch_end(self,outputs):
-        self.reference_scorer.compute(save_report_dir=self._log_dir,save_file_name='reference_score.txt')
-        self.classmate_scorer.compute(save_report_dir=self._log_dir,save_file_name='classmate_score.txt')
-        self.keyword_coverage_scorer.compute(save_report_dir=self._log_dir,save_file_name='keyword_coverage_score.txt')
+        pass
                 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
