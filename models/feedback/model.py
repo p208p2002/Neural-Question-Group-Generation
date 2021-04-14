@@ -11,6 +11,7 @@ from .config import *
 from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
+from transformers.optimization import Adafactor
 
 args = get_args()
 
@@ -63,9 +64,7 @@ class Model(pl.LightningModule,CustomMixin):
         self.tokenizer = get_tokenizer()
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
-        # self.automatic_optimization = False
-        self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
-
+        
     def forward(self, input_ids,attention_mask,labels=None,use_negative_loss=False,decoder_input_ids=None):
         return self.model(
                 input_ids=input_ids,
@@ -165,4 +164,17 @@ class Model(pl.LightningModule,CustomMixin):
         pass
         
     def configure_optimizers(self):
+        # self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
+        self.opt = Adafactor(
+            self.parameters(),
+            lr=args.lr,
+            eps=(1e-30, 1e-3),
+            clip_threshold=1.0,
+            decay_rate=-0.8,
+            beta1=None,
+            weight_decay=0.0,
+            relative_step=False,
+            scale_parameter=False,
+            warmup_init=False
+        )
         return self.opt
