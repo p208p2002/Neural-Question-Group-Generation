@@ -1,5 +1,5 @@
 pytorch-lightning==1.2.4
-transformers==4.3.2
+transformers==4.5.1
 getkey
 git+https://github.com/p208p2002/geneticalgorithm.git
 loguru
