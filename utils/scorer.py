@@ -107,7 +107,7 @@ class Scorer():
                 tokens.append(token.text.lower())
                 tokenize_sentence = ' '.join(tokens)
         except:
-            logger.debug(f'preprocess fail, return "" raw_sentence:{raw_sentence} result:{result}')
+            logger.warning(f'preprocess fail, return "" raw_sentence:{raw_sentence} result:{result}')
             return ""
         return tokenize_sentence
     

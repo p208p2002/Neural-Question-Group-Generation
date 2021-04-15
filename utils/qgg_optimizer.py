@@ -29,7 +29,7 @@ def optims_runner(optims,optim_names,condicate_questions,context):
     results = []
     for optim,opt_name in zip(optims,optim_names):
         result = optim.optimize(condicate_questions=condicate_questions,context=context)
-        logger.debug(f"opt_name:{opt_name}, result:{result}")
+        # logger.debug(f"opt_name:{opt_name}, result:{result}")
         results.append(result)
     return results
 
