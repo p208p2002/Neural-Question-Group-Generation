@@ -8,7 +8,7 @@ import pytorch_lightning as pl
 import re
 from .config import *
 import random
-from utils.dataset import data_filter
+from utils.data_process import data_filter_and_reconstruct
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -125,7 +125,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
 
-        self.datas = data_filter(self.data_lines)
+        self.datas = data_filter_and_reconstruct(self.data_lines)
     
 
     def __getitem__(self,index):

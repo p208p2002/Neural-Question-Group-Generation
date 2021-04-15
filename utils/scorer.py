@@ -43,13 +43,13 @@ def scorers_runner(scoers,optim_names,optims_results,label_questions,article,pre
         keyword_coverage_scorer = scorer['keyword_coverage_scorer']
 
         #
-        logger.debug(f"optim_name:{optim_name}")
-        logger.debug(f"reference_scorer len:{reference_scorer.len}")
-        logger.debug(f"classmate_scorer len:{classmate_scorer.len}")
-        logger.debug(f"keyword_coverage_scorer len:{keyword_coverage_scorer.len}")
+        # logger.debug(f"optim_name:{optim_name}")
+        # logger.debug(f"reference_scorer len:{reference_scorer.len}")
+        # logger.debug(f"classmate_scorer len:{classmate_scorer.len}")
+        # logger.debug(f"keyword_coverage_scorer len:{keyword_coverage_scorer.len}")
 
-        #
-        logger.debug(f"decode_questions:{decode_questions}")
+        # #
+        # logger.debug(f"decode_questions:{decode_questions}")
 
         # reference socre
         for decode_question in decode_questions:

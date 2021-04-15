@@ -12,6 +12,7 @@ from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
 from transformers.optimization import Adafactor
+from utils.data_process import separate_answer_and_question
 
 args = get_args()
 
@@ -140,8 +141,11 @@ class Model(pl.LightningModule,CustomMixin):
         decode_questions = self.feedback_generation(input_ids,feedback_times=args.gen_n)
         
         # clean qa pair format
-        decode_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in decode_questions]
-        label_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in label_questions]
+        decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
+        decode_questions = [qa['answer_text']+qa['question_text'] for qa in decode_questions]
+
+        label_questions = [separate_answer_and_question(qa) for qa in label_questions]
+        label_questions = [qa['answer_text']+qa['question_text'] for qa in label_questions]
 
         optims_results = optims_runner(
             optims=self.qgg_optimizers,
@@ -164,17 +168,17 @@ class Model(pl.LightningModule,CustomMixin):
         pass
         
     def configure_optimizers(self):
-        # self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
-        self.opt = Adafactor(
-            self.parameters(),
-            lr=args.lr,
-            eps=(1e-30, 1e-3),
-            clip_threshold=1.0,
-            decay_rate=-0.8,
-            beta1=None,
-            weight_decay=0.0,
-            relative_step=False,
-            scale_parameter=False,
-            warmup_init=False
-        )
+        self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
+        # self.opt = Adafactor(
+        #     self.parameters(),
+        #     lr=args.lr,
+        #     eps=(1e-30, 1e-3),
+        #     clip_threshold=1.0,
+        #     decay_rate=-0.8,
+        #     beta1=None,
+        #     weight_decay=0.0,
+        #     relative_step=False,
+        #     scale_parameter=False,
+        #     warmup_init=False
+        # )
         return self.opt

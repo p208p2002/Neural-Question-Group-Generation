@@ -10,6 +10,7 @@ from .config import *
 from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
+from utils.data_process import separate_answer_and_question
 
 args = get_args()
 
@@ -86,8 +87,11 @@ class Model(pl.LightningModule):
         decode_questions = decode_questions[:args.gen_n]
 
         # clean qa pair format
-        decode_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in decode_questions]
-        label_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in label_questions]
+        decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
+        decode_questions = [qa['answer_text']+qa['question_text'] for qa in decode_questions]
+
+        label_questions = [separate_answer_and_question(qa) for qa in label_questions]
+        label_questions = [qa['answer_text']+qa['question_text'] for qa in label_questions]
 
         optims_results = optims_runner(
             optims=self.qgg_optimizers,

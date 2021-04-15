@@ -9,7 +9,7 @@ import re
 from .config import *
 import random
 from transformers.models.bart.modeling_bart import shift_tokens_right
-from utils.dataset import data_filter
+from utils.data_process import data_filter_and_reconstruct
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -140,7 +140,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
         self.sep_token = self.tokenizer.sep_token
 
-        self.datas = data_filter(self.data_lines)
+        self.datas = data_filter_and_reconstruct(self.data_lines)
 
     def __getitem__(self,index):
         data = self.datas[index]
