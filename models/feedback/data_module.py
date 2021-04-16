@@ -56,10 +56,10 @@ class DataModule(pl.LightningDataModule):
         self.test_dataset = ConcatDataset(test_datasets)
        
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, num_workers=os.cpu_count(), batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.train_dataset, num_workers=os.cpu_count(), batch_size=self.batch_size, shuffle=True ,prefetch_factor=4)
 
     def val_dataloader(self):
-        return DataLoader(self.test_dataset, num_workers=os.cpu_count(), batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.test_dataset, num_workers=os.cpu_count(), batch_size=self.batch_size, shuffle=True ,prefetch_factor=4)
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, num_workers=1, batch_size=1, shuffle=False)
