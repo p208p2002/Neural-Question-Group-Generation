@@ -17,46 +17,7 @@ from loguru import logger
 
 args = get_args()
 
-class CustomMixin():
-    def feedback_generation(self, input_ids, feedback_times = 3):
-        outputs = []
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        #
-        input_ids = input_ids.squeeze(0).tolist()        
-        # gen_ids = None
-
-        for i in range(feedback_times):            
-            gened_ids = self.tokenizer(GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN,add_special_tokens=False)['input_ids']
-            input_ids = gened_ids + input_ids
-            input_ids = input_ids[:MAX_LENGTH]
-            
-            sample_outputs = self.model.generate(
-                input_ids = torch.LongTensor(input_ids).unsqueeze(0).to(device),
-                attention_mask=torch.LongTensor([1]*len(input_ids)).unsqueeze(0).to(device),
-                max_length=MAX_LENGTH,
-                early_stopping=True,
-                temperature=1.0,
-                do_sample=True,
-                top_p=0.9,
-                top_k=10,
-                num_beams=1,
-                no_repeat_ngram_size=5,
-                num_return_sequences=1,
-            )
-            sample_output = sample_outputs[0]        
-            decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
-            decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
-            decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-            if WARN_UP_TOKEN != "":
-                decode_questions = decode_questions.replace(WARN_UP_TOKEN,"")
-            if self.tokenizer.bos_token is not None:
-                decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
-            decode_questions = decode_questions.strip()
-            # if args.dev: print(decode_questions)
-            outputs.append(decode_questions)
-        return outputs
-
-class Model(pl.LightningModule,CustomMixin):
+class Model(pl.LightningModule):
     def __init__(self,args=args):
         super().__init__()
         self.save_hyperparameters(args)
@@ -170,3 +131,41 @@ class Model(pl.LightningModule,CustomMixin):
     def configure_optimizers(self):
         self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
         return self.opt
+    
+    def feedback_generation(self, input_ids, feedback_times = 3):
+        outputs = []
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        #
+        input_ids = input_ids.squeeze(0).tolist()        
+        # gen_ids = None
+
+        for i in range(feedback_times):            
+            gened_ids = self.tokenizer(GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN,add_special_tokens=False)['input_ids']
+            input_ids = gened_ids + input_ids
+            input_ids = input_ids[:MAX_LENGTH]
+            
+            sample_outputs = self.model.generate(
+                input_ids = torch.LongTensor(input_ids).unsqueeze(0).to(device),
+                attention_mask=torch.LongTensor([1]*len(input_ids)).unsqueeze(0).to(device),
+                max_length=MAX_LENGTH,
+                early_stopping=True,
+                temperature=1.0,
+                do_sample=True,
+                top_p=0.9,
+                top_k=10,
+                num_beams=1,
+                no_repeat_ngram_size=5,
+                num_return_sequences=1,
+            )
+            sample_output = sample_outputs[0]        
+            decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
+            decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
+            decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
+            if WARN_UP_TOKEN != "":
+                decode_questions = decode_questions.replace(WARN_UP_TOKEN,"")
+            if self.tokenizer.bos_token is not None:
+                decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
+            decode_questions = decode_questions.strip()
+            # if args.dev: print(decode_questions)
+            outputs.append(decode_questions)
+        return outputs
