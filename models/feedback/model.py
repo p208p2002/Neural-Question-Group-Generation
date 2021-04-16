@@ -12,7 +12,7 @@ from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
 from utils.data_process import separate_answer_and_question
-from transformers import get_cosine_schedule_with_warmup
+from utils.scheduler import step_scheduler,setup_scheduler
 from loguru import logger
 
 args = get_args()
@@ -82,12 +82,8 @@ class Model(pl.LightningModule,CustomMixin):
         items["loss"] = items.pop("loss", None) # change display order
         return items
     
-    # def on_train_epoch_start(self):
-
-    
+    @step_scheduler
     def training_step(self, batch, batch_idx):
-        dict_to_log = {}
-
         outputs = self(
             input_ids = batch[0],
             attention_mask = batch[1],
@@ -111,12 +107,8 @@ class Model(pl.LightningModule,CustomMixin):
                 )
             n_loss = n_outputs['loss']
             loss += n_loss
+            self.log('n_loss',n_loss,prog_bar=True)
 
-            dict_to_log['n_loss'] = n_loss
-            
-        dict_to_log['lr'] = self.scheduler.get_last_lr()[0]
-        self.log_dict(dict_to_log, prog_bar=True)
-        self.scheduler.step() # update lr
         return loss
     
     def validation_step(self, batch, batch_idx):
@@ -173,18 +165,8 @@ class Model(pl.LightningModule,CustomMixin):
     @compute_score
     def test_epoch_end(self,outputs):
         pass
-        
+    
+    @setup_scheduler
     def configure_optimizers(self):
-        train_dataloader_size = len(self.train_dataloader())
-        num_warmup_steps = int(train_dataloader_size*0.5)
-        num_training_steps = self.trainer.max_epochs*train_dataloader_size
-
         self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
-        self.scheduler = get_cosine_schedule_with_warmup(
-                self.opt,
-                num_warmup_steps = num_warmup_steps, # use fisrt 0.5 epoch for warmup
-                num_training_steps = num_training_steps # total training step
-            )
-
-        logger.info(f'optim scheduler is enable, num_warmup_steps:{num_warmup_steps} num_training_steps:{num_training_steps}')
         return self.opt

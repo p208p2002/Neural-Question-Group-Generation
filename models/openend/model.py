@@ -11,6 +11,7 @@ from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
 from utils.data_process import separate_answer_and_question
+from utils.scheduler import step_scheduler,setup_scheduler
 
 args = get_args()
 
@@ -26,6 +27,7 @@ class Model(pl.LightningModule):
     def forward(self, input_ids,attention_mask,labels=None):
         return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
     
+    @step_scheduler
     def training_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
         loss = outputs['loss']
@@ -112,6 +114,7 @@ class Model(pl.LightningModule):
     @compute_score
     def test_epoch_end(self,outputs):
         pass
-                
+
+    @setup_scheduler
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
