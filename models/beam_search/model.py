@@ -10,6 +10,8 @@ from .config import *
 from utils.scorer import setup_scorer,compute_score,scorers_runner
 from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
+from utils.scheduler import setup_scheduler,step_scheduler
+from utils.data_process import separate_answer_and_question
 args = get_args()
 
 def _parse_question(question):
@@ -41,20 +43,15 @@ class Model(pl.LightningModule):
     def forward(self, input_ids,attention_mask,labels=None):
         return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
     
+    @step_scheduler
     def training_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
-        if args.base_model == 'transfo-xl-wt103':
-            loss = outputs['losses'].mean()
-        else:
-            loss = outputs['loss']
+        loss = outputs['loss']
         return loss
     
     def validation_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
-        if args.base_model == 'transfo-xl-wt103':
-            loss = outputs['losses'].mean()
-        else:
-            loss = outputs['loss']
+        loss = outputs['loss']
         self.log('dev_loss',loss)
     
     @setup_optim
@@ -97,24 +94,24 @@ class Model(pl.LightningModule):
         for sample_output in sample_outputs:
             decode_questions +=  "_$[0]" + self.tokenizer.decode(sample_output, skip_special_tokens=True)
     
-        if 'm_race' in args.datasets:
-            decode_questions = decode_questions.split('_$')
-            new_decode_questions = []
-            levels = []
-            for decode_question in decode_questions:
-                level,question = _parse_question(decode_question)
-                if question =="": continue
-                new_decode_questions.append(question)
-                levels.append(level)
-            decode_questions = new_decode_questions
-        else:
-            decode_questions = decode_questions.split(self.tokenizer.sep_token)
+        decode_questions = decode_questions.split('_$')
+        new_decode_questions = []
+        levels = []
+        for decode_question in decode_questions:
+            level,question = _parse_question(decode_question)
+            if question =="": continue
+            new_decode_questions.append(question)
+            levels.append(level)
+        decode_questions = new_decode_questions
         
         if args.dev: print(decode_questions)
 
         # clean qa pair format
-        decode_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in decode_questions]
-        label_questions = [re.sub("[A-Z]{1}:|[A-Z]{1}:","",q) for q in label_questions]
+        decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
+        decode_questions = [f"{qa['answer_text']} {qa['question_text']}" for qa in decode_questions]
+
+        label_questions = [separate_answer_and_question(qa) for qa in label_questions]
+        label_questions = [f"{qa['answer_text']} {qa['question_text']}" for qa in label_questions]
 
         optims_results = optims_runner(
             optims=self.qgg_optimizers,
@@ -135,6 +132,7 @@ class Model(pl.LightningModule):
     @compute_score
     def test_epoch_end(self,outputs):
         pass
-                
+    
+    @setup_scheduler
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
