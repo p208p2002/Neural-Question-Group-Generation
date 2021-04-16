@@ -1,3 +1,4 @@
+# optimizer scheduler from tranining: https://huggingface.co/transformers/main_classes/optimizer_schedules.html
 from transformers import get_cosine_schedule_with_warmup
 from loguru import logger
 
