@@ -89,11 +89,13 @@ class Model(pl.LightningModule):
         decode_questions = decode_questions[:args.gen_n]
 
         # clean qa pair format
+        # the order of training target is `answer` -> `question`
+        # but we changed to `question` -> `answer` here for readability
         decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
-        decode_questions = [f"{qa['answer_text']} {qa['question_text']}" for qa in decode_questions]
+        decode_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
 
         label_questions = [separate_answer_and_question(qa) for qa in label_questions]
-        label_questions = [f"{qa['answer_text']} {qa['question_text']}" for qa in label_questions]
+        label_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in label_questions]
 
         optims_results = optims_runner(
             optims=self.qgg_optimizers,
