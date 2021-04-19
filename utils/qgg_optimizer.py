@@ -4,6 +4,7 @@ from .scorer import CoverageScorer,SimilarityScorer
 import re
 import random
 from loguru import logger
+from utils import timer
 
 def setup_optim(func):
     def wrapper(*_args,**_kwargs):
@@ -63,7 +64,7 @@ class GAOptimizer():
                 'max_iteration_without_improv':8
             }
         )
-
+    
     def fitness_function(self,genome):
         # reset scorer
         self.coverage_scorer.clean()

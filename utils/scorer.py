@@ -42,15 +42,6 @@ def scorers_runner(scoers,optim_names,optims_results,label_questions,article,pre
         classmate_scorer = scorer['classmate_scorer']
         keyword_coverage_scorer = scorer['keyword_coverage_scorer']
 
-        #
-        # logger.debug(f"optim_name:{optim_name}")
-        # logger.debug(f"reference_scorer len:{reference_scorer.len}")
-        # logger.debug(f"classmate_scorer len:{classmate_scorer.len}")
-        # logger.debug(f"keyword_coverage_scorer len:{keyword_coverage_scorer.len}")
-
-        # #
-        # logger.debug(f"decode_questions:{decode_questions}")
-
         # reference socre
         for decode_question in decode_questions:
             reference_scorer.add(hyp=decode_question,refs=label_questions)
@@ -86,7 +77,7 @@ def compute_score(func):
     return wrapper
 
 class Scorer():
-    def __init__(self,preprocess=True,metrics_to_omit=["CIDEr"]):
+    def __init__(self,preprocess=True,metrics_to_omit=["CIDEr","METEOR"]):
         self.preprocess = preprocess
         self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True,metrics_to_omit=metrics_to_omit)
         self.score = defaultdict(lambda : 0.0)
@@ -187,7 +178,7 @@ class CoverageScorer(Scorer):
                     count_coverage += 1
                     break 
         return count_coverage/count_article_sent
-    
+        
     def add(self,sents:list,article:str):
         sents = sents[:]
         if self.preprocess:

@@ -8,3 +8,4 @@ datasets.b
 .backups
 custom_transformers
 run_plan*.sh
+build/
