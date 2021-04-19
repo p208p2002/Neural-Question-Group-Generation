@@ -164,8 +164,6 @@ class Model(pl.LightningModule):
             decode_questions = self.tokenizer.decode(sample_output, skip_special_tokens=False)
             decode_questions = re.sub(re.escape(self.tokenizer.pad_token),'',decode_questions)
             decode_questions = re.sub(re.escape(self.tokenizer.eos_token),'',decode_questions)
-            if WARN_UP_TOKEN != "":
-                decode_questions = decode_questions.replace(WARN_UP_TOKEN,"")
             if self.tokenizer.bos_token is not None:
                 decode_questions = re.sub(re.escape(self.tokenizer.bos_token),'',decode_questions)
             decode_questions = decode_questions.strip()
