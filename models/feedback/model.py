@@ -24,6 +24,7 @@ class Model(pl.LightningModule):
 
         #
         args = get_args()
+        self.hparams = args
         self.tokenizer = get_tokenizer()
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
