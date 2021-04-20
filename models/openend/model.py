@@ -93,6 +93,20 @@ class Model(pl.LightningModule):
         # the order of training target is `answer` -> `question`
         # but we changed to `question` -> `answer` here for readability
         decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
+        
+        # decode_questions may broken(e.g. not a qa pair)
+        # try to fix it with repeat self
+        _decode_questions = []
+        for qa in decode_questions:
+            if qa['question_text'] != "" and qa['answer_text'] !="":
+                _decode_questions.append(qa)
+        if len(_decode_questions) < args.gen_n:
+            logger.warning("some question is broken, `len(_decode_questions) < args.gen_n`, will try repeat self to filling")
+        while len(_decode_questions) < args.gen_n:
+            _decode_questions.append(_decode_questions[random.randint(0,len(_decode_questions)-1)])
+        decode_questions = _decode_questions
+
+        #
         decode_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
 
         label_questions = [separate_answer_and_question(qa) for qa in label_questions]
