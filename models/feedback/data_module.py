@@ -56,10 +56,10 @@ class DataModule(pl.LightningDataModule):
         self.test_dataset = ConcatDataset(test_datasets)
        
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, num_workers=os.cpu_count(), batch_size=self.batch_size, shuffle=True ,prefetch_factor=4)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.test_dataset, num_workers=os.cpu_count(), batch_size=self.batch_size, shuffle=True ,prefetch_factor=4)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True)
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, num_workers=1, batch_size=1, shuffle=False)
@@ -92,12 +92,7 @@ class UtilsMixin():
                     labels.append(target_encoding_id)
                 else:
                     labels.append(-100) # ignore "pad token" in label
-            #
-            # if is_negative: # ignore head and eos for negative label (set to -100) 
-            #     for i,l_id in enumerate(labels):
-            #         if l_id in stop_word_ids:
-            #             labels[i] = -100
-            # decoder input shift right    
+
             decoder_input_ids = [tokenizer.bos_token_id] + decoder_input_ids[:-1] # decoder_input_ids is `2` in BART
 
         else:
@@ -140,6 +135,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
         self.sep_token = self.tokenizer.sep_token
 
+        # filter question group size < 0
+        # and combine answer and question to `select_questions`
         self.datas = data_filter_and_reconstruct(self.data_lines)
 
     def __getitem__(self,index):
@@ -149,34 +146,39 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         all_questions = data['select_questions'][:]
         random.shuffle(all_questions)
 
-        # 
+        # sample one question from question group as label
         random_select_question_for_label = random.randint(0,len(all_questions)-1)        
         question_for_label = all_questions.pop(random_select_question_for_label)
 
-        # we random select for state
-        try:
+        # prune question group size for simulation generate state
+        # t0: [gen][gen]context
+        # t1: [gen]a1[gen]context
+        # t2: [gen]a1,a2[gen]context
+        if len(all_questions) >1:
             random_state_rage = random.randint(0,len(all_questions)-1)
-        except:
+        else:
             random_state_rage = 0
-        
         all_questions = all_questions[:random_state_rage]
 
         #
-        if not self.eval_input: # train
-            # context =  self.sep_token.join(all_questions) + self.sep_token + context
-            context = GENED_TOKEN +  self.sep_token.join(all_questions) + GENED_TOKEN + context
-            label = WARN_UP_TOKEN + question_for_label + self.tokenizer.eos_token
+        if not self.eval_input: # for training data
+            context = GENED_TOKEN +  self.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in all_questions]) + GENED_TOKEN + context
+            label = question_for_label + self.tokenizer.eos_token
             model_input = self.prepare_input(context, label= label)
 
-            # select for negative
+            # select the last question for negative label
+            # t0: no negative label
+            # t1: q1 for negative label
+            # t2: q2 for negative label
             if len(all_questions)>0:
-                # random.shuffle(all_questions)
-                negative_sample_label = WARN_UP_TOKEN + all_questions.pop(-1) + self.tokenizer.eos_token
-                
+                negative_sample_label =  all_questions.pop(-1) + self.tokenizer.eos_token
+                # the label contain `question` and `answer`, but we only need `answer` for negative loss
+                negative_sample_label = re.sub(r"\[Q:\].*$","",negative_sample_label) 
                 negative_model_input = self.prepare_input(context, label= negative_sample_label, is_negative = True)
 
                 model_input['n_decoder_input_ids'] = negative_model_input['decoder_input_ids']
-                model_input['n_labels'] = negative_model_input['labels']
+                # the first token of n_labels is `[A:]`, we don't want to punish that
+                model_input['n_labels'] = torch.cat((torch.LongTensor([-100]),negative_model_input['labels'][1:]))
             else:
                 model_input['n_decoder_input_ids'] = torch.LongTensor([self.tokenizer.pad_token_id]*len(model_input['labels']))
                 model_input['n_labels'] = torch.LongTensor([-100]*len(model_input['labels']))

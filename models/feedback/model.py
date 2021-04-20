@@ -142,8 +142,8 @@ class Model(pl.LightningModule):
         input_ids = input_ids.squeeze(0).tolist()        
         # gen_ids = None
 
-        for i in range(feedback_times):            
-            gened_ids = self.tokenizer(GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN,add_special_tokens=False)['input_ids']
+        for i in range(feedback_times):
+            gened_ids = self.tokenizer(GENED_TOKEN + self.tokenizer.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in outputs]) + GENED_TOKEN,add_special_tokens=False)['input_ids']
             input_ids = gened_ids + input_ids
             input_ids = input_ids[:MAX_LENGTH]
             
