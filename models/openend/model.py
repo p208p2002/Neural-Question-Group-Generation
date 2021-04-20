@@ -12,6 +12,7 @@ from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
 from utils.data_process import separate_answer_and_question
 from utils.scheduler import step_scheduler,setup_scheduler
+import random
 
 args = get_args()
 
