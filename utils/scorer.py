@@ -5,6 +5,7 @@ import re
 import stanza
 from loguru import logger
 import copy
+from functools import lru_cache
 
 def setup_scorer(func):
     def wrapper(*_args,**_kwargs):
@@ -90,6 +91,7 @@ class Scorer():
         if self.preprocess:
             del self.nlp
     
+    @lru_cache(maxsize=100)
     def _preprocess(self,raw_sentence):
         result = self.nlp(raw_sentence.replace("\n\n",""))
         tokens = []
