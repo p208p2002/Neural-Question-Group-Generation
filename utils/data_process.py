@@ -3,6 +3,9 @@ import json
 import re
 from .tokenizer import QUESTION_PREFIX_TOKEN,ANSWER_PREFIX_TOKEN
 from loguru import logger
+from utils.scorer import scorers_runner
+from utils.qgg_optimizer import optims_runner
+import random
 
 def data_filter_and_reconstruct(data_lines):
     answer_tag = ["A","B","C","D"]
@@ -61,3 +64,58 @@ def separate_answer_and_question(raw_text):
     
     logger.warning(f"qa separate with `{raw_text}` fail, return empty string")
     return {'answer_text':'','question_text':''}
+
+def process_decode_questions(article,label_questions,decode_questions,args,qgg_optimizers,scorers,predict_logger):
+    """
+    this func process the quesiotns that model generate
+    we need to do some processing to group question
+    and also log and eval
+    """
+
+    # clean qa pair format
+    # the order of training target is `answer` -> `question`
+    # but we changed to `question` -> `answer` here for readability
+    decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
+    
+    # decode_questions may broken(e.g. not a qa pair)
+    # try to fix it with repeat self
+    _decode_questions = []
+    for qa in decode_questions:
+        if qa['question_text'] != "" and qa['answer_text'] !="":
+            _decode_questions.append(qa)
+    if len(_decode_questions) < args.gen_n:
+        logger.warning("some question is broken, `len(_decode_questions) < args.gen_n`, will try repeat self to filling")
+    while len(_decode_questions) < args.gen_n:
+        _decode_questions.append(_decode_questions[random.randint(0,len(_decode_questions)-1)])
+    decode_questions = _decode_questions
+
+    #
+    decode_answers = [f"{qa['answer_text']}" for qa in decode_questions]
+    decode_answers_ans_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
+
+    label_questions = [separate_answer_and_question(qa) for qa in label_questions]
+    label_questions = [f"{qa['question_text']}" for qa in label_questions]
+
+    optims_results = optims_runner(
+        optims=qgg_optimizers,
+        optim_names=args.qgg_optims,
+        condicate_questions=decode_answers_ans_questions,
+        context=article
+    )
+    
+    # filter out optims_results's qa to only q
+    for decode_answer in decode_answers:
+        for i,optims_result in enumerate(optims_results):
+            optims_result = list(map(lambda qa: re.sub(re.escape(decode_answer)+r"$","",qa).strip(),optims_result))
+            optims_results[i] = optims_result
+
+    scorers_runner(
+        scoers=scorers,
+        optim_names=args.qgg_optims,
+        optims_results=optims_results,
+        label_questions=label_questions,
+        article=article,
+        predict_logger = predict_logger
+    )
+
+    return optims_results

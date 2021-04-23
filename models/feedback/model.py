@@ -8,13 +8,12 @@ import re
 import os
 import json
 from .config import *
-from utils.scorer import setup_scorer,compute_score,scorers_runner
+from utils.data_process import process_decode_questions
+from utils.scorer import setup_scorer,compute_score
 from utils.logger import setup_logger
-from utils.qgg_optimizer import setup_optim,optims_runner
-from utils.data_process import separate_answer_and_question
+from utils.qgg_optimizer import setup_optim
 from utils.scheduler import step_scheduler,setup_scheduler
 from loguru import logger
-import random
 
 args = get_args()
 
@@ -101,50 +100,13 @@ class Model(pl.LightningModule):
         assert batch_size == 1
 
         decode_questions = self.feedback_generation(input_ids,feedback_times=args.gen_n)
-        
-        # clean qa pair format
-        # the order of training target is `answer` -> `question`
-        # but we changed to `question` -> `answer` here for readability
-        decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
-        
-        # decode_questions may broken(e.g. not a qa pair)
-        # try to fix it with repeat self
-        _decode_questions = []
-        for qa in decode_questions:
-            if qa['question_text'] != "" and qa['answer_text'] !="":
-                _decode_questions.append(qa)
-        if len(_decode_questions) < args.gen_n:
-            logger.warning("some question is broken, `len(_decode_questions) < args.gen_n`, will try repeat self to filling")
-        while len(_decode_questions) < args.gen_n:
-            _decode_questions.append(_decode_questions[random.randint(0,len(_decode_questions)-1)])
-        decode_questions = _decode_questions
-
-        #
-        decode_answers = [f"{qa['answer_text']}" for qa in decode_questions]
-        decode_answers_ans_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
-
-        label_questions = [separate_answer_and_question(qa) for qa in label_questions]
-        label_questions = [f"{qa['question_text']}" for qa in label_questions]
-
-        optims_results = optims_runner(
-            optims=self.qgg_optimizers,
-            optim_names=args.qgg_optims,
-            condicate_questions=decode_answers_ans_questions,
-            context=article
-        )
-        
-        # filter out optims_results's qa to only q
-        for decode_answer in decode_answers:
-            for i,optims_result in enumerate(optims_results):
-                optims_result = list(map(lambda qa: re.sub(re.escape(decode_answer)+r"$","",qa).strip(),optims_result))
-                optims_results[i] = optims_result
-
-        scorers_runner(
-            scoers=self.scorers,
-            optim_names=args.qgg_optims,
-            optims_results=optims_results,
-            label_questions=label_questions,
-            article=article,
+        decode_questions = process_decode_questions(
+            article = article,
+            label_questions = label_questions,
+            decode_questions = decode_questions,
+            args = args,
+            qgg_optimizers= self.qgg_optimizers,
+            scorers = self.scorers,
             predict_logger = self.predict_logger
         )
         
