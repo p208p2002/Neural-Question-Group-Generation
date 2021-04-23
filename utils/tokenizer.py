@@ -26,4 +26,8 @@ def create_base_tokenizer(base_model,extra_tokens=[]):
         tokenizer.add_tokens(general_extra_tokens,special_tokens=True)
         logger.info(f"add extra_tokens:{extra_tokens}")
         tokenizer.add_tokens(extra_tokens,special_tokens=True)
+
+        #
+        tokenizer.question_prefix_token_id = tokenizer.convert_tokens_to_ids([QUESTION_PREFIX_TOKEN])[0]
+        tokenizer.answer_prefix_token_id = tokenizer.convert_tokens_to_ids([ANSWER_PREFIX_TOKEN])[0]
     return tokenizer

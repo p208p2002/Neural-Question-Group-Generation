@@ -177,8 +177,19 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 negative_model_input = self.prepare_input(context, label= negative_sample_label, is_negative = True)
 
                 model_input['n_decoder_input_ids'] = negative_model_input['decoder_input_ids']
-                # the first token of n_labels is `[A:]`, we don't want to punish that
-                model_input['n_labels'] = torch.cat((torch.LongTensor([-100]),negative_model_input['labels'][1:]))
+                model_input['n_labels'] = negative_model_input['labels']
+                
+                # no punish for `[Q:]` and `[A:]`
+                model_input['n_labels'] = torch.where(
+                    model_input['n_labels'] != self.tokenizer.question_prefix_token_id,
+                    model_input['n_labels'],
+                    -100
+                )
+                model_input['n_labels'] = torch.where(
+                    model_input['n_labels'] != self.tokenizer.answer_prefix_token_id,
+                    model_input['n_labels'],
+                    -100
+                )                
             else:
                 model_input['n_decoder_input_ids'] = torch.LongTensor([self.tokenizer.pad_token_id]*len(model_input['labels']))
                 model_input['n_labels'] = torch.LongTensor([-100]*len(model_input['labels']))
