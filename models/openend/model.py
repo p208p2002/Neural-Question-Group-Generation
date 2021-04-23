@@ -108,17 +108,25 @@ class Model(pl.LightningModule):
         decode_questions = _decode_questions
 
         #
-        decode_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
+        decode_answers = [f"{qa['answer_text']}" for qa in decode_questions]
+        decode_answers_ans_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
 
         label_questions = [separate_answer_and_question(qa) for qa in label_questions]
-        label_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in label_questions]
+        # label_answers = [f"{qa['answer_text']}" for qa in label_questions]
+        label_questions = [f"{qa['question_text']}" for qa in label_questions]
 
         optims_results = optims_runner(
             optims=self.qgg_optimizers,
             optim_names=args.qgg_optims,
-            condicate_questions=decode_questions,
+            condicate_questions=decode_answers_ans_questions,
             context=article
         )
+        
+        # filter out optims_results's qa to only q
+        for decode_answer in decode_answers:
+            for i,optims_result in enumerate(optims_results):
+                optims_result = list(map(lambda qa: re.sub(re.escape(decode_answer)+r"$","",qa).strip(),optims_result))
+                optims_results[i] = optims_result
 
         scorers_runner(
             scoers=self.scorers,
@@ -128,7 +136,7 @@ class Model(pl.LightningModule):
             article=article,
             predict_logger = self.predict_logger
         )
-
+        
     @compute_score
     def test_epoch_end(self,outputs):
         pass

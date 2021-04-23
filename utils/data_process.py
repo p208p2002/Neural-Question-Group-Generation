@@ -16,7 +16,8 @@ def data_filter_and_reconstruct(data_lines):
         general_questions = data['general_questions'][:]
         
         # continue, if no questions
-        data['select_questions'] = article_spec_questions + cloze_questions + general_questions
+        # data['select_questions'] = article_spec_questions + cloze_questions + general_questions
+        data['select_questions'] = article_spec_questions + cloze_questions
         if (len(data['select_questions'])==0):
             continue
         
