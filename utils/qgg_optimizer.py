@@ -46,7 +46,7 @@ class GAOptimizer():
         self.condicate_questions = None
         self.context = None
         self.coverage_scorer = CoverageScorer()
-        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR","ROUGE_L"])
+        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR",'Bleu_1', 'Bleu_2', 'Bleu_3', 'Bleu_4'])
         self.candicate_pool_size = candicate_pool_size
         self.model=ga(
             function=self.fitness_function,
@@ -83,7 +83,7 @@ class GAOptimizer():
                 classmate_questions = pick_questions[:]
                 classmate_questions.remove(pick_question)
                 self.similarity_scorer.add(hyp=pick_question,refs=classmate_questions)
-        classmate_similarity_score = self.similarity_scorer.compute(return_score=True).get('Bleu_2',0.0)
+        classmate_similarity_score = self.similarity_scorer.compute(return_score=True).get('ROUGE_L',0.0)
         
         # diversity_score
         has_s_type = False
@@ -172,7 +172,7 @@ class GreedyOptimizer():
         self.condicate_questions = None
         self.context = None
         self.coverage_scorer = CoverageScorer()
-        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR","ROUGE_L"])
+        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR",'Bleu_1', 'Bleu_2', 'Bleu_3', 'Bleu_4'])
 
     def optimize(self,condicate_questions,context,*args,**kwargs):
         """
@@ -193,7 +193,7 @@ class GreedyOptimizer():
             classmate_questions.remove(question)
             if len(classmate_questions) > 1:
                 self.similarity_scorer.add(hyp=question,refs=classmate_questions)
-            classmate_similarity_score = self.similarity_scorer.compute(return_score=True).get('Bleu_2',0.0)
+            classmate_similarity_score = self.similarity_scorer.compute(return_score=True).get('ROUGE_L',0.0)
             
             score = keyword_coverage_score + (1.0-classmate_similarity_score)
             question_with_score[question] = score

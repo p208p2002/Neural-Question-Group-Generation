@@ -76,6 +76,7 @@ def separate_answer_and_question(raw_text):
         search_groups = search.groups()
         answer_text = search_groups[1]
         question_text = search_groups[3]
+        question_text = "" if len(question_text.split()) <=2 else question_text
         return {'answer_text':answer_text,'question_text':question_text}
     
     # try match question first
@@ -84,6 +85,7 @@ def separate_answer_and_question(raw_text):
         search_groups = search.groups()
         answer_text = search_groups[3]
         question_text = search_groups[1]
+        question_text = "" if len(question_text.split()) <=2 else question_text
         return {'answer_text':answer_text,'question_text':question_text}
     
     # try match only question
@@ -92,6 +94,7 @@ def separate_answer_and_question(raw_text):
         search_groups = search.groups()
         question_text = search_groups[1]
         answer_text = ''
+        question_text = "" if len(question_text.split()) <=2 else question_text
         return {'answer_text':answer_text,'question_text':question_text}
     
     logger.warning(f"qa separate with `{raw_text}` fail, return empty string")
