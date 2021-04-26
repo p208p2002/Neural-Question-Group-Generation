@@ -22,5 +22,5 @@ def create_base_parser():
 
 def get_general_args():
     parser = create_base_parser()
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     return args
