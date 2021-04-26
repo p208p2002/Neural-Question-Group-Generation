@@ -142,8 +142,8 @@ class SimilarityScorer(Scorer):
 class CoverageScorer(Scorer):
     def __init__(self,preprocess=True):
         super().__init__(preprocess=preprocess)
-        self.stop_words_en = open('/user_data/MasterQG/utils/stopwords-en.txt','r',encoding='utf-8')
-        self.stop_words_sign = open('/user_data/MasterQG/utils/stopwords-sign.txt','r',encoding='utf-8')
+        self.stop_words_en = open('utils/stopwords-en.txt','r',encoding='utf-8')
+        self.stop_words_sign = open('utils/stopwords-sign.txt','r',encoding='utf-8')
         self.stop_words = self.stop_words_en.read().split() + self.stop_words_sign.read().split()
     
     def __del__(self):
