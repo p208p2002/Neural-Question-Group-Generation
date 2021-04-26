@@ -16,6 +16,7 @@ def create_base_parser():
     parser.add_argument('--run_test',action='store_true')
     parser.add_argument('-fc','--from_checkpoint',type=str,default=None)
     parser.add_argument('--use_subsets',default=['s-type','c-type','g-type'], choices=['s-type','c-type','g-type'], nargs='+', required=False)
+    parser.add_argument('--gen_target',choices=['only-q','q-and-a'], required=True)
 
     return parser
 

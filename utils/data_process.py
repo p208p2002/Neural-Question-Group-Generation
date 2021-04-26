@@ -8,7 +8,7 @@ from .scorer import scorers_runner
 from .qgg_optimizer import optims_runner
 from .argparser import get_general_args
 
-def data_filter_and_reconstruct(data_lines,use_subsets=get_general_args().use_subsets):
+def data_filter_and_reconstruct(data_lines,g_args=get_general_args()):
     answer_tag = ["A","B","C","D"]
     new_data_list = []
     for data_line in data_lines:
@@ -20,7 +20,7 @@ def data_filter_and_reconstruct(data_lines,use_subsets=get_general_args().use_su
         general_questions = data['general_questions'][:]
         
         data['select_questions'] = []
-        for use_subset in use_subsets:
+        for use_subset in g_args.use_subsets:
             if use_subset == 'c-type':
                 data['select_questions'] += cloze_questions
             elif use_subset == 'g-type':
@@ -34,16 +34,30 @@ def data_filter_and_reconstruct(data_lines,use_subsets=get_general_args().use_su
         if (len(data['select_questions'])==0):
             continue
         
-        # combine question and answer with format `[A:]answer[Q:]question`
-        for i,question in enumerate(data['select_questions']):
-            q_id = questions.index(question)
-            a_id = answer_tag.index(data['answers'][q_id])
-            answer_text = data['options'][q_id][a_id]
-            question = re.sub(r"www\..*\.com","",question)
-            label_format = f"{ANSWER_PREFIX_TOKEN}{answer_text}{QUESTION_PREFIX_TOKEN}{question}"
+        if g_args.gen_target == 'q-and-a':
+            # combine question and answer with format `[A:]answer[Q:]question`
+            for i,question in enumerate(data['select_questions']):
+                q_id = questions.index(question)
+                a_id = answer_tag.index(data['answers'][q_id])
+                answer_text = data['options'][q_id][a_id]
+                label_format = f"{ANSWER_PREFIX_TOKEN}{answer_text}{QUESTION_PREFIX_TOKEN}{question}"
+                # override select_questions
+                data['select_questions'][i] = label_format
+                
+        elif g_args.gen_target == 'only-q':
+            # format to `[Q:]question`
+            for i,question in enumerate(data['select_questions']):
+                label_format = f"{QUESTION_PREFIX_TOKEN}{question}"
+                # override select_questions
+                data['select_questions'][i] = label_format
 
-            # override select_questions
-            data['select_questions'][i] = label_format
+        else:
+            raise Exception('`g_args.gen_target` no match')
+        
+        # clean noise for quesitons
+        for i,question in enumerate(data['select_questions']):
+            question = re.sub(r"www\..*\.com","",question)
+            data['select_questions'][i] = question
 
         new_data_list.append(data)
 
@@ -72,15 +86,25 @@ def separate_answer_and_question(raw_text):
         question_text = search_groups[1]
         return {'answer_text':answer_text,'question_text':question_text}
     
+    # try match only question
+    search = re.compile(r"(\[Q:\])(.*)").search(raw_text)
+    if search and len(search.groups()) == 2:
+        search_groups = search.groups()
+        question_text = search_groups[1]
+        answer_text = ''
+        return {'answer_text':answer_text,'question_text':question_text}
+    
     logger.warning(f"qa separate with `{raw_text}` fail, return empty string")
     return {'answer_text':'','question_text':''}
 
-def process_decode_questions(article,label_questions,decode_questions,args,qgg_optimizers,scorers,predict_logger):
+def process_decode_questions(article,label_questions,decode_questions,args,qgg_optimizers,scorers,predict_logger,g_args = get_general_args()):
     """
     this func process the quesiotns that model generate
     we need to do some processing to group question
     and also log and eval
     """
+
+    logger.debug(decode_questions)
 
     # clean qa pair format
     # the order of training target is `answer` -> `question`
@@ -91,8 +115,15 @@ def process_decode_questions(article,label_questions,decode_questions,args,qgg_o
     # try to fix it with repeat self
     _decode_questions = []
     for qa in decode_questions:
-        if qa['question_text'] != "" and qa['answer_text'] !="":
-            _decode_questions.append(qa)
+        if g_args.gen_target == 'q-and-a':
+            if qa['question_text'] != "" and qa['answer_text'] !="":
+                _decode_questions.append(qa)
+        elif g_args.gen_target == 'only-q':
+            if qa['question_text'] != "" and qa['answer_text'] =="":
+                _decode_questions.append(qa)
+        else:
+            raise Exception('`g_args.gen_target` no match')
+    
     if len(_decode_questions) < args.gen_n:
         logger.warning("some question is broken, `len(_decode_questions) < args.gen_n`, will try repeat self to filling")
     while len(_decode_questions) < args.gen_n:

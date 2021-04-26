@@ -115,6 +115,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         # config
         self.set_config(dataset_name='m_race',eval_input=eval_input,bos_token=None)
         self.sep_token = self.tokenizer.sep_token
+        self.args = get_args()
 
         # filter question group size < 0
         # and combine answer and question to `select_questions`
@@ -154,7 +155,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             if len(all_questions)>0:
                 negative_sample_label =  all_questions.pop(-1) + self.tokenizer.eos_token
                 # the label contain `question` and `answer`, but we only need `answer` for negative loss
-                negative_sample_label = re.sub(r"\[Q:\].*$","",negative_sample_label) 
+                if self.args.gen_target == 'q-and-a':
+                    negative_sample_label = re.sub(r"\[Q:\].*$","",negative_sample_label)   
                 negative_model_input = self.prepare_input(context, label= negative_sample_label, is_negative = True)
 
                 model_input['n_decoder_input_ids'] = negative_model_input['decoder_input_ids']
