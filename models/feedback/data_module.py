@@ -152,7 +152,6 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(all_questions) + GENED_TOKEN
             # logger.debug(gened_text)
             # time.sleep(1)
-
             
             context = gened_text + context
             label = question_for_label + self.tokenizer.eos_token
