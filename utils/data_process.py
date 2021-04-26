@@ -131,8 +131,13 @@ def process_decode_questions(article,label_questions,decode_questions,args,qgg_o
     decode_questions = _decode_questions
 
     #
-    decode_answers = [f"{qa['answer_text']}" for qa in decode_questions]
-    decode_answers_ans_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
+    if g_args.gen_target == 'q-and-a':
+        decode_answers = [f"{qa['answer_text']}" for qa in decode_questions]
+        decode_answers_ans_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
+    elif g_args.gen_target == 'only-q':
+        decode_answers_ans_questions = [f"{qa['question_text']}" for qa in decode_questions]
+    else:
+        raise Exception('`g_args.gen_target` no match')
 
     label_questions = [separate_answer_and_question(qa) for qa in label_questions]
     label_questions = [f"{qa['question_text']}" for qa in label_questions]
@@ -145,10 +150,11 @@ def process_decode_questions(article,label_questions,decode_questions,args,qgg_o
     )
     
     # filter out optims_results's qa to only q
-    for decode_answer in decode_answers:
-        for i,optims_result in enumerate(optims_results):
-            optims_result = list(map(lambda qa: re.sub(re.escape(decode_answer)+r"$","",qa).strip(),optims_result))
-            optims_results[i] = optims_result
+    if g_args.gen_target == 'q-and-a':
+        for decode_answer in decode_answers:
+            for i,optims_result in enumerate(optims_results):
+                optims_result = list(map(lambda qa: re.sub(re.escape(decode_answer)+r"$","",qa).strip(),optims_result))
+                optims_results[i] = optims_result
 
     scorers_runner(
         scoers=scorers,

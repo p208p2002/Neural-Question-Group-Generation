@@ -54,14 +54,14 @@ class GAOptimizer():
             variable_type='bool',
             convergence_curve=False,
             algorithm_parameters = {
-                'max_num_iteration': 32,
-                'population_size':12,
+                'max_num_iteration': 40,
+                'population_size':20,
                 'mutation_probability':0.2,
                 'elit_ratio': 0.2,
                 'crossover_probability': 0.6,
                 'parents_portion': 0.5,
                 'crossover_type':'two_point',
-                'max_iteration_without_improv':8
+                'max_iteration_without_improv':10
             }
         )
     
