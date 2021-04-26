@@ -14,6 +14,7 @@ from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim
 from utils.scheduler import step_scheduler,setup_scheduler
 from loguru import logger
+import time
 
 args = get_args()
 
@@ -127,7 +128,13 @@ class Model(pl.LightningModule):
         # gen_ids = None
 
         for i in range(feedback_times):
-            gened_ids = self.tokenizer(GENED_TOKEN + self.tokenizer.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in outputs]) + GENED_TOKEN,add_special_tokens=False)['input_ids']
+            if self.hparams.gen_target == 'q-and-a':
+                gened_text = GENED_TOKEN + self.tokenizer.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in outputs]) + GENED_TOKEN
+            else: # only-q
+                gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN
+            # logger.debug(gened_text)
+            # time.sleep(1)
+            gened_ids = self.tokenizer(gened_text,add_special_tokens=False)['input_ids']            
             input_ids = gened_ids + input_ids
             input_ids = input_ids[:MAX_LENGTH]
             

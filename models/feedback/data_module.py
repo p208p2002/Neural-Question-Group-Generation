@@ -10,6 +10,8 @@ from .config import *
 import random
 from transformers.models.bart.modeling_bart import shift_tokens_right
 from utils.data_process import data_filter_and_reconstruct
+from loguru import logger
+import time
 
 class DataModule(pl.LightningDataModule):
     def __init__(self,args = get_args()):
@@ -144,7 +146,15 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         #
         if not self.eval_input: # for training data
-            context = GENED_TOKEN +  self.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in all_questions]) + GENED_TOKEN + context
+            if self.args.gen_target == 'q-and-a':
+                gened_text = GENED_TOKEN + self.tokenizer.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in all_questions]) + GENED_TOKEN
+            else: # only-q
+                gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(all_questions) + GENED_TOKEN
+            # logger.debug(gened_text)
+            # time.sleep(1)
+
+            
+            context = gened_text + context
             label = question_for_label + self.tokenizer.eos_token
             model_input = self.prepare_input(context, label= label)
 
