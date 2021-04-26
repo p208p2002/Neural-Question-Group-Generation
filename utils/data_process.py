@@ -1,13 +1,14 @@
 from torch.utils.data import Dataset
 import json
 import re
-from .tokenizer import QUESTION_PREFIX_TOKEN,ANSWER_PREFIX_TOKEN
-from loguru import logger
-from utils.scorer import scorers_runner
-from utils.qgg_optimizer import optims_runner
 import random
+from loguru import logger
+from .tokenizer import QUESTION_PREFIX_TOKEN,ANSWER_PREFIX_TOKEN
+from .scorer import scorers_runner
+from .qgg_optimizer import optims_runner
+from .argparser import get_general_args
 
-def data_filter_and_reconstruct(data_lines):
+def data_filter_and_reconstruct(data_lines,use_subsets=get_general_args().use_subsets):
     answer_tag = ["A","B","C","D"]
     new_data_list = []
     for data_line in data_lines:
@@ -18,9 +19,18 @@ def data_filter_and_reconstruct(data_lines):
         cloze_questions = data['cloze_questions'][:]
         general_questions = data['general_questions'][:]
         
+        data['select_questions'] = []
+        for use_subset in use_subsets:
+            if use_subset == 'c-type':
+                data['select_questions'] += cloze_questions
+            elif use_subset == 'g-type':
+                data['select_questions'] += general_questions
+            elif use_subset == 's-type':
+                data['select_questions'] += article_spec_questions
+            else:
+                raise Exception('condititon no match')
+        
         # continue, if no questions
-        # data['select_questions'] = article_spec_questions + cloze_questions + general_questions
-        data['select_questions'] = article_spec_questions + cloze_questions
         if (len(data['select_questions'])==0):
             continue
         
