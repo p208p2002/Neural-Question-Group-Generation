@@ -39,7 +39,7 @@ class DataModule(pl.LightningDataModule):
             ))
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=False)
 
     def val_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=True)
@@ -123,12 +123,23 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         # and combine answer and question to `select_questions`
         self.datas = data_filter_and_reconstruct(self.data_lines)
 
+        #
+        if eval_input == False:
+            logger.info("filling new_datas")
+            new_datas = []
+            for data in self.datas:
+                new_datas.append(data)
+                new_datas.append(data)
+                new_datas.append(data)
+            self.datas = new_datas
+
+
     def __getitem__(self,index):
         data = self.datas[index]
         context = data['article']
 
         all_questions = data['select_questions'][:]
-        random.shuffle(all_questions)
+        # random.shuffle(all_questions)
 
         # sample one question from question group as label
         random_select_question_for_label = random.randint(0,len(all_questions)-1)        
@@ -149,7 +160,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
             if self.args.gen_target == 'q-and-a':
                 gened_text = GENED_TOKEN + self.tokenizer.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in all_questions]) + GENED_TOKEN
             else: # only-q
-                gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(all_questions) + GENED_TOKEN
+                gened_text = self.tokenizer.bos_token * len(all_questions)
+                # gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(all_questions) + GENED_TOKEN
             # logger.debug(gened_text)
             # time.sleep(1)
             

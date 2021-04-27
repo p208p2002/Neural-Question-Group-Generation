@@ -131,7 +131,8 @@ class Model(pl.LightningModule):
             if self.hparams.gen_target == 'q-and-a':
                 gened_text = GENED_TOKEN + self.tokenizer.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in outputs]) + GENED_TOKEN
             else: # only-q
-                gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN
+                # gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(outputs) + GENED_TOKEN
+                gened_text = self.tokenizer.bos_token * len(outputs)
             # logger.debug(gened_text)
             # time.sleep(1)
             gened_ids = self.tokenizer(gened_text,add_special_tokens=False)['input_ids']            
