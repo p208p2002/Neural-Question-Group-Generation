@@ -1,0 +1,3 @@
+model_a .log_focus_trans/lightning_logs/version_6/predicts/log.jsonl
+model_b .log_focus_trans/lightning_logs/version_6/predicts/log.jsonl
+model_c .log_focus_trans/lightning_logs/version_6/predicts/log.jsonl

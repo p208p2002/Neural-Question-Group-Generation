@@ -1,5 +1,6 @@
 import argparse
 import sys
+from loguru import logger
 
 def create_base_parser():
     """
@@ -18,8 +19,15 @@ def create_base_parser():
     parser.add_argument('-fc','--from_checkpoint',type=str,default=None)
     parser.add_argument('--use_subsets', default=['s-type','c-type'], choices=['s-type','c-type','g-type'], nargs='+', required=False)
     parser.add_argument('--gen_target',default='only-q',choices=['only-q','q-and-a'], required=False)
-    parser.add_argument('-m','--message',default='', required=False)
+    parser.add_argument('-m','--message', required=True)
     parser.add_argument('--_argv',default=' '.join(sys.argv))
+    parser.add_argument('-ghed','--gen_human_eval_data',action='store_true')
+
+    # 
+    args, unknown = parser.parse_known_args()
+    if args.gen_target == 'q-and-a':
+        logger.warning("`args.gen_target == 'q-and-a'` is deprecated")
+        raise Exception()
     return parser
 
 def get_general_args():

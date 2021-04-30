@@ -1,4 +1,5 @@
 import os
+import json
 
 def setup_logger(func):
     def wrapper(*args,**kwargs):
@@ -17,6 +18,9 @@ class PredictLogger():
         self.count = 0
 
     def log(self, log_dict):
+        with open(os.path.join(self.save_dir,'log.jsonl'),'a',encoding='utf-8') as f:
+            f.write(json.dumps(log_dict)+"\n")
+
         with open(os.path.join(self.save_dir,'%d.txt'%self._index),'a',encoding='utf-8') as f:
             for key,item in log_dict.items():
                 f.write('-'*10+" "+key+" %d "%self.count+'-'*10+'\n')

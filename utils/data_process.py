@@ -7,6 +7,7 @@ from .tokenizer import QUESTION_PREFIX_TOKEN,ANSWER_PREFIX_TOKEN
 from .scorer import scorers_runner
 from .qgg_optimizer import optims_runner
 from .argparser import get_general_args
+import time
 
 def data_filter_and_reconstruct(data_lines,g_args=get_general_args()):
     answer_tag = ["A","B","C","D"]
@@ -33,26 +34,33 @@ def data_filter_and_reconstruct(data_lines,g_args=get_general_args()):
         # continue, if no questions
         if (len(data['select_questions'])==0):
             continue
-        
-        if g_args.gen_target == 'q-and-a':
-            # combine question and answer with format `[A:]answer[Q:]question`
-            for i,question in enumerate(data['select_questions']):
-                q_id = questions.index(question)
-                a_id = answer_tag.index(data['answers'][q_id])
-                answer_text = data['options'][q_id][a_id]
-                label_format = f"{ANSWER_PREFIX_TOKEN}{answer_text}{QUESTION_PREFIX_TOKEN}{question}"
-                # override select_questions
-                data['select_questions'][i] = label_format
-                
-        elif g_args.gen_target == 'only-q':
-            # format to `[Q:]question`
-            for i,question in enumerate(data['select_questions']):
-                label_format = f"{QUESTION_PREFIX_TOKEN}{question}"
-                # override select_questions
-                data['select_questions'][i] = label_format
 
-        else:
-            raise Exception('`g_args.gen_target` no match')
+        # if in gen_human_eval_data
+        # only keep select_questions which size equal to args.pick_n
+        if '_human_eval_data_warning_is_show' not in globals():
+            global _human_eval_data_warning_is_show
+            _human_eval_data_warning_is_show = False
+        if g_args.gen_human_eval_data:
+            if _human_eval_data_warning_is_show is False:
+                _human_eval_data_warning_is_show = True
+                logger.warning("you are in the `gen_human_eval_data` mode")
+                logger.warning("this will only keep select_questions which size equal to args.pick_n")
+                time.sleep(3)
+            assert g_args.run_test and g_args.from_checkpoint !='','expect --run_test and --from_checkpoint'
+            if '_human_eval_data_count' not in globals():
+                global _human_eval_data_count
+                _human_eval_data_count = 0
+            if (len(data['select_questions'])!=g_args.pick_n):
+                continue
+            else:
+                _human_eval_data_count+=1
+                print(f'_human_eval_data_count:{_human_eval_data_count}',end='\r')
+            
+        # format to `[Q:]question`
+        for i,question in enumerate(data['select_questions']):
+            label_format = f"{QUESTION_PREFIX_TOKEN}{question}"
+            # override select_questions
+            data['select_questions'][i] = label_format
         
         # clean noise for quesitons
         for i,question in enumerate(data['select_questions']):

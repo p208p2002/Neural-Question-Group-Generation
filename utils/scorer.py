@@ -91,7 +91,7 @@ class Scorer():
         if self.preprocess:
             del self.nlp
     
-    @lru_cache(maxsize=100)
+    @lru_cache(maxsize=200)
     def _preprocess(self,raw_sentence):
         result = self.nlp(raw_sentence.replace("\n\n",""))
         tokens = []
