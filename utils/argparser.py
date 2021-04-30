@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 def create_base_parser():
     """
@@ -15,9 +16,10 @@ def create_base_parser():
     parser.add_argument('--dev',type=int,default=0)
     parser.add_argument('--run_test',action='store_true')
     parser.add_argument('-fc','--from_checkpoint',type=str,default=None)
-    parser.add_argument('--use_subsets', choices=['s-type','c-type','g-type'], nargs='+', required=True)
-    parser.add_argument('--gen_target',choices=['only-q','q-and-a'], required=True)
-
+    parser.add_argument('--use_subsets', default=['s-type','c-type'], choices=['s-type','c-type','g-type'], nargs='+', required=False)
+    parser.add_argument('--gen_target',default='only-q',choices=['only-q','q-and-a'], required=False)
+    parser.add_argument('-m','--message',default='', required=False)
+    parser.add_argument('--_argv',default=' '.join(sys.argv))
     return parser
 
 def get_general_args():
