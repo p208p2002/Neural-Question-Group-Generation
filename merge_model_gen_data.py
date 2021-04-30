@@ -34,20 +34,20 @@ if __name__ == "__main__":
     while(current_index < data_len):
         merge_output = {}
         article = datasets[0][current_index]['article']
-        merge_output['_id'] = f"{current_index}_{article[:20]}"
+        merge_output['_id'] = f"{current_index}"
         merge_output['_models'] = [d.model for d in datasets]
         
-        optims = list(datasets[0][current_index].keys())
-        optims.remove('article')
-        
-        merge_output['_optims'] = optims
         merge_output['article'] = article
         merge_output['questionGroups'] = []
+
+        label_questions = datasets[0][current_index]['label_questions']
+        merge_output['questionGroups'].append(label_questions)
+
         for dataset in datasets:
             _article = dataset[current_index]['article']
             assert article[:20] == _article[:20],'article is not equal'            
-            for optim in optims:
-                merge_output['questionGroups'].append(dataset[current_index][optim])
+            merge_output['questionGroups'].append(dataset[current_index]['ga']) # use only ga
+
         merge_outputs.append(merge_output)
         current_index += 1
     
