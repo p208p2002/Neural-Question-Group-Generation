@@ -144,11 +144,8 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         #
         if not self.eval_input: # for training data
-            if self.args.gen_target == 'q-and-a':
-                gened_text = GENED_TOKEN + self.tokenizer.sep_token.join([re.sub(r"\[Q:\].*$","",qa)  for qa in all_questions]) + GENED_TOKEN
-            else: # only-q
-                gened_text = self.tokenizer.bos_token * (len(all_questions))
-                # gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(all_questions) + GENED_TOKEN
+            gened_text = self.tokenizer.bos_token * (len(all_questions))
+            # gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(all_questions) + GENED_TOKEN
             # logger.debug(gened_text)
             # time.sleep(1)
             
