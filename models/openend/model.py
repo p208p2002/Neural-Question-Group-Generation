@@ -71,6 +71,7 @@ class Model(pl.LightningModule):
             temperature=0.85,
             do_sample=True,
             top_p=0.9,
+            top_k=10,          
             num_beams=1,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences,

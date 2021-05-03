@@ -1,3 +1,3 @@
-model_a .log_focus_trans/lightning_logs/version_6/predicts/log.jsonl
-model_b .log_focus_trans/lightning_logs/version_6/predicts/log.jsonl
-model_c .log_focus_trans/lightning_logs/version_6/predicts/log.jsonl
+focus_trans .log_focus_trans/lightning_logs/version_1/predicts/log.jsonl
+feedback .log_feedback/lightning_logs/version_1/predicts/log.jsonl
+openend .log_openend/lightning_logs/version_1/predicts/log.jsonl

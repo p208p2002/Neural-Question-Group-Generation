@@ -85,6 +85,10 @@ class Scorer():
         self.len = 0
         if self.preprocess:
             self.nlp = stanza.Pipeline(lang='en', processors='tokenize', tokenize_no_ssplit=True, verbose=False)
+        
+        #
+        self.stop_words_sign = open('utils/stopwords-sign.txt','r',encoding='utf-8').read().split()
+        self.stop_words_sign_rule = "|".join([re.escape(sign) for sign in self.stop_words_sign])
     
     def __del__(self):
         del self.nlgeval
@@ -98,8 +102,10 @@ class Scorer():
         try:
             for token in result.sentences[0].tokens:
                 tokens.append(token.text.lower())
-                tokenize_sentence = ' '.join(tokens)
-        except:
+            tokenize_sentence = ' '.join(tokens)
+            tokenize_sentence = re.sub(self.stop_words_sign_rule,"",tokenize_sentence)                
+        except Exception as e:
+            logger.warning(e)
             logger.warning(f'preprocess fail, return "" raw_sentence:{raw_sentence} result:{result}')
             return ""
         return tokenize_sentence
@@ -145,6 +151,14 @@ class CoverageScorer(Scorer):
         self.stop_words_en = open('utils/stopwords-en.txt','r',encoding='utf-8')
         self.stop_words_sign = open('utils/stopwords-sign.txt','r',encoding='utf-8')
         self.stop_words = self.stop_words_en.read().split() + self.stop_words_sign.read().split()
+        
+        # some sign used to split context to sentence, remove them from `stopwords-sign`
+        self.stop_words_sign = open('utils/stopwords-sign.txt','r',encoding='utf-8').read().split()
+        self.stop_words_sign.remove(',')
+        self.stop_words_sign.remove('.')
+        self.stop_words_sign.remove('!')
+        self.stop_words_sign.remove('?')
+        self.stop_words_sign_rule = "|".join([re.escape(sign) for sign in self.stop_words_sign])
     
     def __del__(self):
         self.stop_words_en.close()
