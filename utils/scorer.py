@@ -6,6 +6,8 @@ import stanza
 from loguru import logger
 import copy
 from functools import lru_cache
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def setup_scorer(func):
     def wrapper(*_args,**_kwargs):
@@ -189,3 +191,53 @@ class CoverageScorer(Scorer):
         coverage_score = self._compute_coverage_score(sents,article)
         self.score['keyword_coverage'] += coverage_score
         self.len += 1
+
+class PPLScorer(Scorer):
+    def __init__(self, model_id = 'gpt2', device = 'cpu', stride=512, max_length=512):
+        self.model = AutoModelForCausalLM.from_pretrained(model_id).to(device)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
+        self.stride = stride
+        self.max_length = max_length
+        self.device = device
+        
+        #
+        self.score = defaultdict(lambda : 0.0)
+        self.len = 0
+    
+    def add(self,sentence):
+        self.score['ppl'] += self._compute_ppl(sentence)
+        self.len += 1
+        
+    def _compute_scaled_ppl(self,sentence,alpha=0.2):
+        # https://www.desmos.com/calculator/scqyyq0ody
+        avg_ll = self._compute_avg_log_likelihood(sentence)
+        return torch.exp(-avg_ll*alpha)
+    
+    def _compute_ppl(self,sentence):
+        # https://huggingface.co/transformers/perplexity.html
+        avg_ll = self._compute_avg_log_likelihood(sentence)
+        return torch.exp(avg_ll)
+        
+    
+    @lru_cache(maxsize=200)
+    def _compute_avg_log_likelihood(self,sentence):
+        stride = self.stride
+        max_length = self.max_length
+        encodings = self.tokenizer(sentence, return_tensors='pt')
+        model = self.model
+
+        lls = []
+        for i in range(0, encodings.input_ids.size(1), stride):
+            begin_loc = max(i + stride - max_length, 0)
+            end_loc = min(i + stride, encodings.input_ids.size(1))
+            trg_len = end_loc - i    # may be different from stride on last loop
+            input_ids = encodings.input_ids[:,begin_loc:end_loc].to(self.device)
+            target_ids = input_ids.clone()
+            target_ids[:,:-trg_len] = -100
+
+            with torch.no_grad():
+                outputs = model(input_ids, labels=target_ids)                
+                log_likelihood = outputs[0] * trg_len
+
+            lls.append(log_likelihood)
+        return torch.stack(lls).sum() / end_loc
