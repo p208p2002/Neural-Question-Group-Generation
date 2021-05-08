@@ -198,7 +198,9 @@ class GreedyOptimizer():
                 self.similarity_scorer.add(hyp=question,refs=classmate_questions)
             classmate_similarity_score = self.similarity_scorer.compute(return_score=True).get('ROUGE_L',0.0)
             
-            score = keyword_coverage_score + (1.0-classmate_similarity_score)
+            scaled_ppl_score = self.similarity_scorer.ppl_scorer._compute_scaled_ppl(question)
+
+            score = keyword_coverage_score + (1.0-classmate_similarity_score) + scaled_ppl_score
             question_with_score[question] = score
             
         question_scores = sorted(question_with_score.items(), key=lambda x:x[-1],reverse=True)
