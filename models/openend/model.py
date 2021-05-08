@@ -91,6 +91,18 @@ class Model(pl.LightningModule):
         decode_questions = decode_questions.split(SEP_TOKEN)
         decode_questions = decode_questions[:args.gen_n]
 
+        # open end may break format(gen specify), try to fix it
+        # excpet: [Q:] any question? [Q:] is there a quesion? [Q:] who _ this ?
+        # open end: [Q:] any question? is there a quesion? [Q:] who _ this ?
+        #                             ^ borken format
+
+        for i,decode_question in enumerate(decode_questions):
+            _new_question = ''
+            for char in decode_question:
+                _new_question += char
+                if char in ['.','?']:
+                    decode_questions[i] = _new_question
+                    break
         #
         decode_questions = process_decode_questions(
             article = article,
