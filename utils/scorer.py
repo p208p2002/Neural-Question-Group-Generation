@@ -142,7 +142,9 @@ class SimilarityScorer(Scorer):
             refs = [self._preprocess(ref) for ref in refs]
         _score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
         ppl_score = self.ppl_scorer._compute_ppl(hyp)
+        scaled_ppl = self.ppl_scorer._compute_scaled_ppl(hyp)
         _score['ppl'] = ppl_score
+        _score['scaled_ppl'] = scaled_ppl
         for score_key in _score.keys():
             self.score[score_key] += _score[score_key]
         self.len += 1
