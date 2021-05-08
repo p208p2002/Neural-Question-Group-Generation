@@ -130,13 +130,19 @@ class Scorer():
         if return_score:
             return out_score
     
-class SimilarityScorer(Scorer):     
+class SimilarityScorer(Scorer):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.ppl_scorer = PPLScorer()
+
     def add(self,hyp,refs):
         refs = refs[:]
         if self.preprocess:
             hyp = self._preprocess(hyp)
             refs = [self._preprocess(ref) for ref in refs]
         _score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
+        ppl_score = self.ppl_scorer._compute_ppl(hyp)
+        _score['ppl'] = ppl_score
         for score_key in _score.keys():
             self.score[score_key] += _score[score_key]
         self.len += 1
@@ -194,7 +200,10 @@ class CoverageScorer(Scorer):
 
 class PPLScorer(Scorer):
     def __init__(self, model_id = 'gpt2', device = 'cpu', stride=512, max_length=512):
-        self.model = AutoModelForCausalLM.from_pretrained(model_id).to(device)
+        if '_ppl_model' not in globals():
+            global _ppl_model
+            _ppl_model = AutoModelForCausalLM.from_pretrained(model_id).to(device)
+        self.model = _ppl_model
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
         self.stride = stride
         self.max_length = max_length
