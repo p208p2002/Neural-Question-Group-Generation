@@ -140,18 +140,44 @@ class MergeRaceDataset(Dataset,UtilsMixin):
         data = self.datas[index]
         context = data['article']
         all_questions = data['select_questions'][:]
-        question_for_label = all_questions[0]
+        question_for_label = all_questions.pop(0)
 
         #
         if not self.eval_input: # for training data
             gened_text = self.tokenizer.bos_token * (len(all_questions))
-            # gened_text = GENED_TOKEN + self.tokenizer.sep_token.join(all_questions) + GENED_TOKEN
             # logger.debug(gened_text)
             # time.sleep(1)
             
             context = gened_text + context
             label = question_for_label + self.tokenizer.eos_token
             model_input = self.prepare_input(context, label= label)
+
+            # select the last question for negative label
+            # t0: no negative label
+            # t1: q1 for negative label
+            # t2: q2 for negative label
+            if len(all_questions)>0:
+                negative_sample_label =  all_questions.pop(0) + self.tokenizer.eos_token
+                # the label contain `question` and `answer`, but we only need `answer` for negative loss
+                negative_model_input = self.prepare_input(context, label= negative_sample_label, is_negative = True)
+
+                model_input['n_decoder_input_ids'] = negative_model_input['decoder_input_ids']
+                model_input['n_labels'] = negative_model_input['labels']
+                
+                # no punish for `[Q:]` and `[A:]`
+                model_input['n_labels'] = torch.where(
+                    model_input['n_labels'] != self.tokenizer.question_prefix_token_id,
+                    model_input['n_labels'],
+                    -100
+                )
+                model_input['n_labels'] = torch.where(
+                    model_input['n_labels'] != self.tokenizer.answer_prefix_token_id,
+                    model_input['n_labels'],
+                    -100
+                )                
+            else:
+                model_input['n_decoder_input_ids'] = torch.LongTensor([self.tokenizer.pad_token_id]*len(model_input['labels']))
+                model_input['n_labels'] = torch.LongTensor([-100]*len(model_input['labels']))
 
             return (
                 # context
@@ -160,6 +186,9 @@ class MergeRaceDataset(Dataset,UtilsMixin):
                 # possitive
                 model_input['decoder_input_ids'],
                 model_input['labels'],
+                # negative
+                model_input['n_decoder_input_ids'],
+                model_input['n_labels'],
             )
         else:
             model_input = self.prepare_input(context, label= None)
