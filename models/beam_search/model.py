@@ -13,6 +13,7 @@ from utils.qgg_optimizer import setup_optim,optims_runner
 from utils.scheduler import setup_scheduler,step_scheduler
 from utils.data_process import separate_answer_and_question
 from loguru import logger
+import random
 
 args = get_args()
 
@@ -85,11 +86,10 @@ class Model(pl.LightningModule):
             attention_mask=attention_mask,
             max_length=MAX_LENGTH,
             early_stopping=True,
-            num_beams=3,
+            num_beams=num_return_sequences,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences
         )
-
 
         # assert len(sample_outputs) == num_return_sequences # 1
         decode_questions = []
@@ -106,6 +106,16 @@ class Model(pl.LightningModule):
             decode_question = re.sub(re.escape('[A:]'),'',decode_question)
             decode_question = decode_question.strip()
             decode_questions[i] = decode_question
+        
+        for i,decode_question in enumerate(decode_questions):
+            if decode_question == "":
+                logger.warning('condicate question with null, we remove it')
+                decode_questions.pop(i)
+        
+        # repeat self to filling
+        while(len(decode_questions)< args.gen_n):
+            random_id = random.randint(0,len(decode_questions)-1)
+            decode_questions.append(decode_questions[random_id])
 
         # clean label
         for i,label_question in enumerate(label_questions):
