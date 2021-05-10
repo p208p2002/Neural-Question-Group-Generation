@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader,Dataset,ConcatDataset
 import os
 import json
-from .tokenizer import get_tokenizer,RACE_BOS,_GENERAL_LEVEL,_MIDDLE_LEVEL
+from .tokenizer import get_tokenizer
 from .argparser import get_args
 import torch
 import pytorch_lightning as pl
@@ -16,43 +16,27 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = args.batch_size
         self.args = args
     
-    def get_dataset(self,stage,d_name):
-        if d_name == 'm_race':
-            train_dataset = ConcatDataset((
-                    MergeRaceDataset('train','middle'),
-                    MergeRaceDataset('train','high'),
-                    MergeRaceDataset('dev','middle'),
-                    MergeRaceDataset('dev','high')
+    def get_dataset(self,stage):
+        train_dataset = ConcatDataset((
+            MergeRaceDataset('train','middle'),
+            MergeRaceDataset('train','high'),
+            MergeRaceDataset('dev','middle'),
+            MergeRaceDataset('dev','high')
+        ))
+        if stage == 'fit':
+            test_dataset = ConcatDataset((
+                MergeRaceDataset('test','middle',eval_input=False),
+                MergeRaceDataset('test','high',eval_input=False)
             ))
-            if stage == 'fit':
-                test_dataset = ConcatDataset((
-                    MergeRaceDataset('test','middle',eval_input=False),
-                    MergeRaceDataset('test','high',eval_input=False)
-                ))
-            elif stage == 'test':
-                test_dataset = ConcatDataset((
-                    MergeRaceDataset('test','middle',eval_input=True),
-                    MergeRaceDataset('test','high',eval_input=True)
-                ))
-        
-        # match fail
-        else:
-            assert False,'no dataset match'
-        
+        elif stage == 'test':
+            test_dataset = ConcatDataset((
+                MergeRaceDataset('test','middle',eval_input=True),
+                MergeRaceDataset('test','high',eval_input=True)
+            ))
         return train_dataset,test_dataset
         
-    def setup(self, stage=None):
-        train_datasets,test_datasets = [],[]
-        print('stage:',stage,', using datasets:',self.args.datasets)
-        for d_name in self.args.datasets:
-            print('loading `%s`...'%d_name,end='\r')
-            train_dataset,test_dataset = self.get_dataset(stage=stage,d_name=d_name)
-            train_datasets.append(train_dataset)
-            test_datasets.append(test_dataset)
-            print('loading `%s`...finish'%d_name)
-        
-        self.train_dataset = ConcatDataset(train_datasets)
-        self.test_dataset = ConcatDataset(test_datasets)
+    def setup(self, stage=None):   
+        self.train_dataset, self.test_dataset = self.get_dataset(stage=stage)
        
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)

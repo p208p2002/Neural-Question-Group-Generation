@@ -12,6 +12,8 @@ from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim,optims_runner
 from utils.scheduler import setup_scheduler,step_scheduler
 from utils.data_process import separate_answer_and_question
+from loguru import logger
+
 args = get_args()
 
 def _parse_question(question):
@@ -44,7 +46,7 @@ class Model(pl.LightningModule):
     def forward(self, input_ids,attention_mask,labels=None):
         return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
     
-    @step_scheduler
+    # @step_scheduler
     def training_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
         loss = outputs['loss']
@@ -90,31 +92,26 @@ class Model(pl.LightningModule):
 
 
         # assert len(sample_outputs) == num_return_sequences # 1
-        decode_questions = ""
+        decode_questions = []
         sample_output = sample_outputs[0]     
         for sample_output in sample_outputs:
-            decode_questions +=  "_$[0]" + self.tokenizer.decode(sample_output, skip_special_tokens=True)
-    
-        decode_questions = decode_questions.split('_$')
-        new_decode_questions = []
-        levels = []
-        for decode_question in decode_questions:
-            level,question = _parse_question(decode_question)
-            if question =="": continue
-            new_decode_questions.append(question)
-            levels.append(level)
-        decode_questions = new_decode_questions
+            decode_questions.append(self.tokenizer.decode(sample_output))
         
-        if args.dev: print(decode_questions)
+        # clean question
+        for i,decode_question in enumerate(decode_questions):
+            decode_question = re.sub(re.escape(self.tokenizer.pad_token),'',decode_question)
+            decode_question = re.sub(re.escape(self.tokenizer.eos_token),'',decode_question)
+            decode_question = re.sub(re.escape(self.tokenizer.bos_token),'',decode_question)    
+            decode_question = re.sub(re.escape('[Q:]'),'',decode_question)
+            decode_question = re.sub(re.escape('[A:]'),'',decode_question)
+            decode_question = decode_question.strip()
+            decode_questions[i] = decode_question
 
-        # clean qa pair format
-        # the order of training target is `answer` -> `question`
-        # but we changed to `question` -> `answer` here for readability
-        decode_questions = [separate_answer_and_question(qa) for qa in decode_questions]
-        decode_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in decode_questions]
-
-        label_questions = [separate_answer_and_question(qa) for qa in label_questions]
-        label_questions = [f"{qa['question_text']} {qa['answer_text']}" for qa in label_questions]
+        # clean label
+        for i,label_question in enumerate(label_questions):
+            label_question = re.sub(re.escape('[Q:]'),'',label_question)
+            label_question = re.sub(re.escape('[A:]'),'',label_question)
+            label_questions[i] = label_question
 
         optims_results = optims_runner(
             optims=self.qgg_optimizers,
@@ -136,6 +133,6 @@ class Model(pl.LightningModule):
     def test_epoch_end(self,outputs):
         pass
     
-    @setup_scheduler
+    # @setup_scheduler
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)
