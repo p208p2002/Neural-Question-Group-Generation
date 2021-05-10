@@ -21,6 +21,7 @@ def create_base_parser():
     parser.add_argument('-m','--message', required=True)
     parser.add_argument('--_argv',default=' '.join(sys.argv))
     parser.add_argument('-ghed','--gen_human_eval_data',action='store_true')
+    parser.add_argument('--gpus',nargs="+", type=int, default=-1)
 
     # 
     args, unknown = parser.parse_known_args()

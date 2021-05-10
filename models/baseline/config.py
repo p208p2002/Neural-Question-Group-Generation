@@ -9,5 +9,5 @@ elif _args.base_model in ['google/reformer-enwik8']:
     assert False
 else:
     ACCELERATOR = 'dp'
-    GPUS = -1
+    GPUS = _args.gpus
     MAX_LENGTH = 1024

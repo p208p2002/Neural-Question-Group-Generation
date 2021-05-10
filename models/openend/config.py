@@ -3,6 +3,6 @@ _args = get_args()
 
 
 ACCELERATOR = 'dp'
-GPUS = -1
+GPUS = _args.gpus
 MAX_LENGTH = 1024
 SEP_TOKEN = '[SEP]'
