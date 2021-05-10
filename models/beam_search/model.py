@@ -46,7 +46,7 @@ class Model(pl.LightningModule):
     def forward(self, input_ids,attention_mask,labels=None):
         return self.model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,return_dict=True)
     
-    # @step_scheduler
+    @step_scheduler
     def training_step(self, batch, batch_idx):
         outputs = self(batch[0],batch[1],batch[2])
         loss = outputs['loss']
@@ -85,7 +85,7 @@ class Model(pl.LightningModule):
             attention_mask=attention_mask,
             max_length=MAX_LENGTH,
             early_stopping=True,
-            num_beams=num_return_sequences + 2,
+            num_beams=3,
             no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences
         )
@@ -133,6 +133,6 @@ class Model(pl.LightningModule):
     def test_epoch_end(self,outputs):
         pass
     
-    # @setup_scheduler
+    @setup_scheduler
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=args.lr)

@@ -3,4 +3,4 @@ _args = get_args()
 
 ACCELERATOR = 'dp'
 GPUS = _args.gpus
-MAX_LENGTH = 1024
+MAX_LENGTH = 512
