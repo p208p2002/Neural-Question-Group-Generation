@@ -1,2 +1,20 @@
-git clone --depth 1 --branch v4.3.3 https://github.com/huggingface/transformers.git custom_transformers
-python merge_model_gen_data.py model_data_path.example
+# Educational Question Group Generation for Reading Assessment Preparation
+## Minimum System Requirements
+- OS: Ubuntu 16.04
+- RAM: 32GB
+- GPU: 1080ti*1
+- Python: 3.6
+- Pytorch: 1.7
+
+## Envermient Setup
+```bash
+pip install -U requirements.txt
+python init_dataset.py
+python setup_scorer.py
+```
+> This process may take 20 minutes
+
+## Training
+```
+pythom train_xxx.py
+```
