@@ -1,6 +1,5 @@
 import pytorch_lightning as pl
-# from custom_transformers.src.transformers import BartForConditionalGeneration
-from .modeling_bart import CustomBartForConditionalGeneration
+from transformers import AutoModelForSeq2SeqLM
 from .tokenizer import get_tokenizer,GENED_TOKEN
 from .argparser import get_args
 import torch
@@ -27,17 +26,16 @@ class Model(pl.LightningModule):
         args = get_args()
         self.hparams = args
         self.tokenizer = get_tokenizer()
-        self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(args.base_model)
         self.model.resize_token_embeddings(len(self.tokenizer))
         
-    def forward(self, input_ids,attention_mask,labels=None,use_negative_loss=False,decoder_input_ids=None):
+    def forward(self, input_ids,attention_mask,labels=None,decoder_input_ids=None):
         return self.model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 decoder_input_ids = None,
                 labels=labels,
-                return_dict=True,
-                use_negative_loss=use_negative_loss
+                return_dict=True
             )
     
     def get_progress_bar_dict(self):
@@ -51,8 +49,7 @@ class Model(pl.LightningModule):
             input_ids = batch[0],
             attention_mask = batch[1],
             decoder_input_ids = batch[2],
-            labels = batch[3],
-            use_negative_loss = False
+            labels = batch[3]
             )
         loss = outputs['loss']            
         return loss
