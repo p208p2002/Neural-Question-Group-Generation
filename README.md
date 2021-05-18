@@ -7,14 +7,13 @@
 - Pytorch: 1.7
 
 ## Envermient Setup
-The follow script will automatic setup the envermient
+The following scripts will automatic setup the envermient
 ```bash
 sudo apt install -y unzip
 pip install -Ur requirements.txt
 python init_dataset.py # download dataset
 python setup_scorer.py
 ```
-> These process may take about 20 minutes
 
 ## Training
 ```
