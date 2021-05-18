@@ -8,6 +8,7 @@
 
 ## Envermient Setup
 ```bash
+sudo apt install -y unzip
 pip install -U requirements.txt
 python init_dataset.py
 python setup_scorer.py
