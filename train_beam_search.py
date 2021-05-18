@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
-from models.beam_search import argparser
-from models.beam_search.model import Model
-from models.beam_search.data_module import DataModule
+from models.BeamSearch import argparser
+from models.BeamSearch.model import Model
+from models.BeamSearch.data_module import DataModule
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
-from models.beam_search.config import GPUS,ACCELERATOR
+from models.BeamSearch.config import GPUS,ACCELERATOR
 from copy import deepcopy
 args = argparser.get_args()
 
@@ -15,7 +15,7 @@ if __name__ == "__main__":
         accelerator=ACCELERATOR,
         fast_dev_run=args.dev,
         precision=32,
-        default_root_dir='.log_beam_search',
+        default_root_dir='.log_BeamSearch',
         max_epochs=args.epoch,
         callbacks=[
             EarlyStopping(monitor='dev_loss',patience=2),
