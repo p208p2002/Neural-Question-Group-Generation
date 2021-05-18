@@ -16,5 +16,5 @@ python setup_scorer.py
 
 ## Training
 ```
-pythom train_xxx.py
+pythom train_xxx.py -m'record message'
 ```
