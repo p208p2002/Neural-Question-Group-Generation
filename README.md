@@ -7,15 +7,20 @@
 - Pytorch: 1.7
 
 ## Envermient Setup
+The follow script will automatic setup the envermient
 ```bash
 sudo apt install -y unzip
 pip install -Ur requirements.txt
-python init_dataset.py
+python init_dataset.py # download dataset
 python setup_scorer.py
 ```
-> This process may take 20 minutes
+> These process may take about 20 minutes
 
 ## Training
 ```
 python train_xxx.py -m'record message'
 ```
+> Use `-h` to check other available `args`
+
+> To reproduce the experiments, you do not need to specify other parameters
+> We have set it to the default value, check `utils/argparser.py` for details
