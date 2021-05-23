@@ -144,7 +144,7 @@ class MergeRaceDataset(Dataset,UtilsMixin):
 
         #
         if not self.eval_input: # for training data
-            gened_text = self.tokenizer.bos_token * (len(all_questions))
+            gened_text = self.tokenizer.bos_token * (len(all_questions)+1)
             # logger.debug(gened_text)
             # time.sleep(1)
             
