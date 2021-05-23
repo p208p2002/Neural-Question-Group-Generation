@@ -13,6 +13,7 @@ from utils.scorer import setup_scorer,compute_score
 from utils.logger import setup_logger
 from utils.qgg_optimizer import setup_optim
 from utils.scheduler import step_scheduler,setup_scheduler
+from utils import save_huggingface_model
 from loguru import logger
 import time
 
@@ -28,7 +29,7 @@ class Model(pl.LightningModule):
         self.hparams = args
         self.tokenizer = get_tokenizer()
         self.model = CustomBartForConditionalGeneration.from_pretrained(args.base_model)
-        self.model.resize_token_embeddings(len(self.tokenizer))
+        self.model.resize_token_embeddings(len(self.tokenizer))        
         
     def forward(self, input_ids,attention_mask,labels=None,use_negative_loss=False,decoder_input_ids=None):
         return self.model(
@@ -78,6 +79,7 @@ class Model(pl.LightningModule):
         loss = self.training_step(batch, batch_idx)
         self.log('dev_loss',loss,prog_bar=True)
     
+    @save_huggingface_model
     @setup_optim
     @setup_logger
     @setup_scorer
