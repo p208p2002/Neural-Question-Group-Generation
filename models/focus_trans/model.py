@@ -46,7 +46,7 @@ class Model(pl.LightningModule):
         items["loss"] = items.pop("loss", None) # change display order
         return items
     
-    @step_scheduler
+    # @step_scheduler
     def training_step(self, batch, batch_idx):
         outputs = self(
             input_ids = batch[0],
@@ -117,7 +117,7 @@ class Model(pl.LightningModule):
     def test_epoch_end(self,outputs):
         pass
     
-    @setup_scheduler
+    # @setup_scheduler
     def configure_optimizers(self):
         self.opt = torch.optim.AdamW(self.parameters(), lr=args.lr)
         return self.opt
@@ -130,7 +130,7 @@ class Model(pl.LightningModule):
         # gen_ids = None
 
         for i in range(feedback_times):
-            gened_text = self.tokenizer.bos_token * len(outputs)
+            gened_text = self.tokenizer.bos_token * (len(outputs)+1)
             gened_ids = self.tokenizer(gened_text,add_special_tokens=False)['input_ids']            
             input_ids = gened_ids + input_ids
             input_ids = input_ids[:MAX_LENGTH]
