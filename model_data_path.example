@@ -1,3 +1,3 @@
-focus_trans .log_focus_trans/lightning_logs/version_1/predicts/log.jsonl
-feedback .log_feedback/lightning_logs/version_1/predicts/log.jsonl
-openend .log_openend/lightning_logs/version_1/predicts/log.jsonl
+qmst .log_qmst/lightning_logs/version_1/predicts/log.jsonl
+self_feedback .log_self_feedback/lightning_logs/version_1/predicts/log.jsonl
+naive .log_naive/lightning_logs/version_1/predicts/log.jsonl

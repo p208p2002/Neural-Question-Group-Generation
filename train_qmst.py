@@ -1,9 +1,9 @@
 import pytorch_lightning as pl
-from models.feedback import argparser
-from models.feedback.model import Model
-from models.feedback.data_module import DataModule
+from models.qmst import argparser
+from models.qmst.model import Model
+from models.qmst.data_module import DataModule
 from pytorch_lightning.callbacks import ModelCheckpoint
-from models.feedback.config import GPUS,ACCELERATOR
+from models.qmst.config import GPUS,ACCELERATOR
 from copy import deepcopy
 
 args = argparser.get_args()
@@ -15,7 +15,7 @@ if __name__ == "__main__":
         accelerator=ACCELERATOR,
         fast_dev_run=args.dev,
         precision=32,
-        default_root_dir='.log_feedback',
+        default_root_dir='.log_qmst',
         max_epochs=args.epoch,
         callbacks=[
             ModelCheckpoint(monitor='dev_loss',filename='{epoch}-{dev_loss:.2f}',save_last=True),
