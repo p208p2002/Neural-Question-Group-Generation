@@ -12,3 +12,4 @@ gen_test.sh
 build/
 merge_model_output.json
 all_model_ckpt/
+run*.sh
