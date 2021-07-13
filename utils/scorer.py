@@ -21,7 +21,8 @@ def setup_scorer(func):
             self.scorers.append({
                 'reference_scorer':SimilarityScorer(),
                 'classmate_scorer':SimilarityScorer(),
-                'keyword_coverage_scorer':CoverageScorer()
+                'keyword_coverage_scorer':CoverageScorer(),
+                'rougel_label_coverage_scorer':RougelLabelCoverageScorer()
             })
 
         return func(*_args,**_kwargs)
@@ -44,6 +45,7 @@ def scorers_runner(scoers,optim_names,optims_results,label_questions,article,pre
         reference_scorer = scorer['reference_scorer']
         classmate_scorer = scorer['classmate_scorer']
         keyword_coverage_scorer = scorer['keyword_coverage_scorer']
+        rougel_label_coverage_scorer = scorer['rougel_label_coverage_scorer']
 
         # reference socre
         for decode_question in decode_questions:
@@ -55,8 +57,12 @@ def scorers_runner(scoers,optim_names,optims_results,label_questions,article,pre
                 classmate_questions = decode_questions[:]
                 classmate_questions.remove(decode_question)
                 classmate_scorer.add(hyp=decode_question,refs=classmate_questions)
+        
         # keyword coverage score
         keyword_coverage_scorer.add(decode_questions,article)
+
+        # label coverage score
+        rougel_label_coverage_scorer.add(hyps=decode_questions,refs=label_questions)
     
     # wirte log
     predict_logger.log(_log_dict)
@@ -71,16 +77,18 @@ def compute_score(func):
             reference_scorer = scorer['reference_scorer']
             classmate_scorer = scorer['classmate_scorer']
             keyword_coverage_scorer = scorer['keyword_coverage_scorer']
+            rougel_label_coverage_scorer = scorer['rougel_label_coverage_scorer']
 
             #
             reference_scorer.compute(save_report_dir=os.path.join(self._log_dir,opt_name),save_file_name='reference_score.txt')
             classmate_scorer.compute(save_report_dir=os.path.join(self._log_dir,opt_name),save_file_name='classmate_score.txt')
             keyword_coverage_scorer.compute(save_report_dir=os.path.join(self._log_dir,opt_name),save_file_name='keyword_coverage_score.txt')
+            rougel_label_coverage_scorer.compute(save_report_dir=os.path.join(self._log_dir,opt_name),save_file_name='label_coverage_score.txt')
         return func(*args,**kwargs)
     return wrapper
 
 class Scorer():
-    def __init__(self,preprocess=True,metrics_to_omit=["CIDEr"]):
+    def __init__(self,preprocess=True,metrics_to_omit=["CIDEr","METEOR"]):
         self.preprocess = preprocess
         self.nlgeval = NLGEval(no_glove=True,no_skipthoughts=True,metrics_to_omit=metrics_to_omit)
         self.score = defaultdict(lambda : 0.0)
@@ -266,3 +274,59 @@ class PPLScorer(Scorer):
 
             lls.append(log_likelihood)
         return torch.stack(lls).sum() / end_loc
+
+class RougelLabelCoverageScorer(Scorer):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)        
+
+    def add(self,hyps,refs):
+        assert type(hyps) == list
+        refs = refs[:]
+        hyps = hyps[:]
+        
+        if self.preprocess:
+            hyps = [self._preprocess(hyp) for hyp in hyps]
+            refs = [self._preprocess(ref) for ref in refs]
+        
+        #    
+        unique_match = defaultdict(lambda :set())
+        total_score = defaultdict(lambda :0.0)
+
+        for hyp in hyps:            
+            #            
+            best_score = defaultdict(lambda : 0.0)
+            best_match = defaultdict(lambda : '')
+            for ref in refs:
+                score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=[ref])
+                for metric_name in score.keys():
+                    if score[metric_name] > best_score[metric_name]:
+                        best_score[metric_name] = score[metric_name]
+                        best_match[metric_name] = ref
+            
+            for key in best_score.keys():
+                total_score[key] += best_score[key]
+                unique_match[key].add(best_match[key])
+                
+        balnce_avg_score = defaultdict(lambda:0.0)
+        unbalnce_avg_score = defaultdict(lambda:0.0)
+        label_coverage_score = defaultdict(lambda:0.0)
+        for key in total_score.keys(): # compute for each metric
+            unique_ref_count = len(unique_match[key])
+            
+            # label_coverage = unique_ref_count/len(refs)
+            label_coverage = unique_ref_count/len(refs)
+            label_coverage_score["label_coverage_"+key] = label_coverage
+            label_coverage_score["label_cover_count_"+key] = unique_ref_count
+
+            balnce_avg_score["banlace_"+key] = total_score[key]/len(hyps)*label_coverage
+            unbalnce_avg_score["unbanlace_"+key] = total_score[key]/len(hyps)            
+        
+        # step length
+        self.len += 1
+        # save to self.score        
+        for score_key in label_coverage_score.keys():
+            self.score[score_key] += label_coverage_score[score_key]
+        # for score_key in balnce_avg_score.keys():
+        #     self.score[score_key] += balnce_avg_score[score_key]
+        # for score_key in unbalnce_avg_score.keys():
+        #     self.score[score_key] += unbalnce_avg_score[score_key]
