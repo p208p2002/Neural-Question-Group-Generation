@@ -87,7 +87,7 @@ class Model(pl.LightningModule):
             max_length=MAX_LENGTH,
             early_stopping=True,
             num_beams=num_return_sequences,
-            no_repeat_ngram_size=5,
+            # no_repeat_ngram_size=5,
             num_return_sequences=num_return_sequences
         )
 

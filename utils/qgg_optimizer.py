@@ -110,6 +110,9 @@ class GAOptimizer():
         # punishment if count_pick not equal to question_group_size
         count_pick = (genome==True).sum()
         punish_weight = 1 - (abs(self.target_question_qroup_size - count_pick)/self.candicate_pool_size)
+        if punish_weight != 1:
+            punish_weight*=0.85
+        
         return score*punish_weight*-1
     
     def decode(self,genome):
