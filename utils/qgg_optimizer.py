@@ -74,7 +74,7 @@ class GAOptimizer():
                 'crossover_probability': 0.6,
                 'parents_portion': 0.5,
                 'crossover_type':'two_point',
-                'max_iteration_without_improv':10
+                'max_iteration_without_improv':20
             }
         ):
         self.candicate_pool_size = candicate_pool_size
