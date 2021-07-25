@@ -27,11 +27,28 @@ def setup_optim(func):
     return wrapper
 
 def optims_runner(optims,optim_names,condicate_questions,context):
-    results = []
-    for optim,opt_name in zip(optims,optim_names):
-        result = optim.optimize(condicate_questions=condicate_questions,context=context)
-        # logger.debug(f"opt_name:{opt_name}, result:{result}")
-        results.append(result)
+    results = []   
+
+    #
+    optim = optims[0]
+    opt_name = optim_names[0]
+    assert opt_name == 'ga'
+    expected_question_gourp_size = optim.target_question_qroup_size
+    
+    # 重新初始化GA    
+    optim.init_ga(candicate_pool_size=len(condicate_questions))
+    
+    #
+    _result = []
+    while(len(_result)!=expected_question_gourp_size):
+        _result = optim.optimize(condicate_questions=condicate_questions,context=context)
+        if(len(_result)!=expected_question_gourp_size):
+            logger.warning('ga redo:%d'%len(_result))
+        if(len(_result)>expected_question_gourp_size):
+            # 重新初始化GA
+            optim.init_ga(candicate_pool_size=len(_result))
+            condicate_questions = _result
+    results.append(_result)
     return results
 
 class GAOptimizer():
@@ -46,14 +63,10 @@ class GAOptimizer():
         self.condicate_questions = None
         self.context = None
         self.coverage_scorer = CoverageScorer()
-        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR",'Bleu_1', 'Bleu_2', 'Bleu_3', 'Bleu_4'])
-        self.candicate_pool_size = candicate_pool_size
-        self.model=ga(
-            function=self.fitness_function,
-            dimension=candicate_pool_size,
-            variable_type='bool',
-            convergence_curve=False,
-            algorithm_parameters = {
+        self.similarity_scorer = SimilarityScorer(metrics_to_omit=["CIDEr","METEOR",'Bleu_1', 'Bleu_2', 'Bleu_3', 'Bleu_4'])        
+        self.init_ga(candicate_pool_size=candicate_pool_size)
+
+    def init_ga(self,candicate_pool_size,ga_config = {
                 'max_num_iteration': 40,
                 'population_size':20,
                 'mutation_probability':0.2,
@@ -63,6 +76,14 @@ class GAOptimizer():
                 'crossover_type':'two_point',
                 'max_iteration_without_improv':10
             }
+        ):
+        self.candicate_pool_size = candicate_pool_size
+        self.model=ga(
+            function=self.fitness_function,
+            dimension=candicate_pool_size,
+            variable_type='bool',
+            convergence_curve=False,
+            algorithm_parameters = ga_config
         )
     
     def fitness_function(self,genome):
