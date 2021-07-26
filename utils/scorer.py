@@ -92,11 +92,6 @@ class Scorer():
         self.stop_words_sign = open('utils/stopwords-sign.txt','r',encoding='utf-8').read().split()
         self.stop_words_sign_rule = "|".join([re.escape(sign) for sign in self.stop_words_sign])
     
-    def __del__(self):
-        # del self.nlgeval
-        if self.preprocess:
-            del self.nlp
-    
     @lru_cache(maxsize=200)
     def _preprocess(self,raw_sentence):
         result = self.nlp(raw_sentence.replace("\n\n",""))
@@ -147,8 +142,14 @@ class SimilarityScorer(Scorer):
             hyp = self._preprocess(hyp)
             refs = [self._preprocess(ref) for ref in refs]
         _score = self.nlgeval.compute_individual_metrics(hyp=hyp, ref=refs)
-        ppl_score = self.ppl_scorer._compute_ppl(hyp)
-        scaled_ppl = self.ppl_scorer._compute_scaled_ppl(hyp)
+        try:
+            ppl_score = self.ppl_scorer._compute_ppl(hyp)
+            scaled_ppl = self.ppl_scorer._compute_scaled_ppl(hyp)
+        except Exception as e:
+            logger.warning(e)
+            logger.warning('compute ppl fail, skip this add')
+            return
+        
         _score['ppl'] = ppl_score
         _score['scaled_ppl'] = scaled_ppl
         for score_key in _score.keys():

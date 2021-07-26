@@ -1,0 +1,3 @@
+python train_beam_search.py -fc all_model_ckpt/beam_search/checkpoints/last.ckpt --run_test -m'bs test' -g_opts ga --pick_n 5 --gen_n 100 # 3
+python train_qmst.py -fc all_model_ckpt/qmst_nl/checkpoints/last.ckpt --run_test -m'bs test' -g_opts ga --pick_n 5 --gen_n 20 # 1
+python train_beam_search.py -fc all_model_ckpt/beam_search/checkpoints/last.ckpt --run_test -m'bs test' -g_opts ga --pick_n 5 --gen_n 200 # 4
