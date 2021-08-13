@@ -1,9 +1,9 @@
 # An Investigation into Neural Question Group Generation augmented by Genetic Algorithm and Negative Label Learning
 
 ## Components
-There are some practical things or components that are independent, welcome to use
+There are some practical things or components that are independent and spread across multiple repo
 
-- [Dataset](https://github.com/p208p2002/EQG-RACE-PLUS/tree/qgg-dataset)
+- [QGG-RACE dataset](https://github.com/p208p2002/EQG-RACE-PLUS/tree/qgg-dataset)
 - [qgg-utils](https://github.com/p208p2002/qgg-utils)
 > Negative Label Loss, Genetic algorithm and Evaluation scorer
 
