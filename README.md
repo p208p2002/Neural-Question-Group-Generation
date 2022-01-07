@@ -1,4 +1,4 @@
-# An Investigation into Neural Question Group Generation augmented by Genetic Algorithm and Negative Label Learning
+# EQGG: Educational Question Group Generation
 
 ## Components
 There are some practical things or components that are independent and spread across multiple repos
