@@ -9,7 +9,7 @@
 </a>
 </span>
 
-<a target="_blank" href="https://huggingface.co/p208p2002/qmst-qgg">
+<a target="_blank" href="https://qgg-demo.nlpnchu.org">
 <img src="https://img.shields.io/badge/💻 Live Demo-78ab78?style=for-the-badge&logoColor=white">
 </a>
 </span>
