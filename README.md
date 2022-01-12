@@ -38,5 +38,5 @@ python setup_scorer.py
 ```
 ## Training
 ```
-python train_xxx.py -m'message to log for this training'
+python train_xxx.py -m'message to note for this training'
 ```
