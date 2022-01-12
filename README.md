@@ -17,6 +17,7 @@
 There are some practical things or components that are independent and spread across multiple repos
 
 - [QGG-RACE dataset](https://github.com/p208p2002/QGG-RACE-dataset)
+- [qgg-demo](https://github.com/p208p2002/qgg-demo)
 - [qgg-utils](https://github.com/p208p2002/qgg-utils)
 > Negative Label Loss, Genetic algorithm and Evaluation scorer
 
