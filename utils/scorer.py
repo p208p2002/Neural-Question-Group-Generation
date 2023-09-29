@@ -147,7 +147,7 @@ class Scorer():
 class SimilarityScorer(Scorer):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.ppl_scorer = PPLScorer()
+        self.ppl_scorer = PPLScorer(device="cuda")
 
     def add(self,hyp,refs):
         refs = refs[:]

@@ -27,7 +27,7 @@ There are some practical things or components that are independent and spread ac
 - RAM:24GB
 - GPU: CUDA device with 12GB VRAM
 ### Setup
-Please install `pytorch>=1.7.1` manually first
+Please install `pytorch>=1.7.1,<=1.9.0` manually first
 > PyTorch install: https://pytorch.org/get-started/locally/
 
 ```
