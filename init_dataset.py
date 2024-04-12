@@ -10,7 +10,7 @@ if __name__ == "__main__":
     # EQG-RACE-PLUS
     # download_from_gd('1wXGyEjzwDpvG1TCv6C8JfUwDJmOiBwOr','EQG-RACE-PLUS.zip')
     os.system('wget https://github.com/p208p2002/EQG-RACE-PLUS/releases/download/eqg-race-plus-1.0/EQG-RACE-PLUS.zip')
-    os.system('unzip datasets/EQG-RACE-PLUS.zip -d datasets')
+    os.system('unzip EQG-RACE-PLUS.zip -d datasets')
     
 
     
