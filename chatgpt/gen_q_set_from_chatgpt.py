@@ -51,7 +51,7 @@ if __name__ == "__main__":
         message = response.choices[0].message.content
         questions = parse_chatgpt_output(message)
 
-        if len(questions)<5:
+        if len(questions) < 5:
             continue
 
         print(data_idx)
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
         out.append({
             "data": data,
-            "gqt_qgg": questions
+            "gpt_question_set": questions
         })
 
         if len(out) == 200:
