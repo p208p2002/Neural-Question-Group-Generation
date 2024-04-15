@@ -4,10 +4,11 @@ import json
 import random
 
 PROMPT_TEMPLATE = """
-Please generate a diverse set of questions from the article. 
-These questions can take various forms, including factual questions, general questions, or fill-in-the-blank types.
-"What is the capital of France?" and "The atomic number of carbon is _." are examples of the various forms questions can take.
-The question set should be answerable and cover the content of the article. Please list the output in a Markdown list.
+Please generate a diverse set of questions based on the article. 
+These questions can vary in format, including factual questions or fill-in-the-blank types. 
+For instance, "What is the capital of France?" exemplifies a factual question, 
+while "The human body is composed of approximately __________ percent water." represents the fill-in-the-blank type. 
+Ensure that the question set is answerable and covers the content of the article. Please list the output in a Markdown list.
 
 Given article:
 {article}
