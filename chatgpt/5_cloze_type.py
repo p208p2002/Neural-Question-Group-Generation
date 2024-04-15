@@ -31,3 +31,13 @@ if __name__ == "__main__":
     print(f"{gpt_ga=}")
     print(f"{qmst=}")
     print(f"{qmst_ga=}")
+
+    # gold label
+    stat_gold_labels = []
+    for data in chat_gpt_data:
+        data = data["data"]
+        qg_size = len(data["specific_questions"]+data["cloze_questions"])
+        stat_gold_labels.append(len(data["cloze_questions"])/qg_size)
+
+    gold_label = statistics.mean(stat_gold_labels)
+    print(f"{gold_label=}")
