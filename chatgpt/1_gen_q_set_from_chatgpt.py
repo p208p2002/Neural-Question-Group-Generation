@@ -4,7 +4,10 @@ import json
 import random
 
 PROMPT_TEMPLATE = """
-Please generate a diverse set of questions from the article. These questions can take various forms, including factual questions, general questions, or fill-in-the-blank types. The question set should be answerable and cover the content of the article. Please list the output in a Markdown list.
+Please generate a diverse set of questions from the article. 
+These questions can take various forms, including factual questions, general questions, or fill-in-the-blank types.
+"What is the capital of France?" and "The atomic number of carbon is _." are examples of the various forms questions can take.
+The question set should be answerable and cover the content of the article. Please list the output in a Markdown list.
 
 Given article:
 {article}
@@ -39,6 +42,9 @@ if __name__ == "__main__":
 
     out = []
     for data_idx, data in enumerate(dataset):
+        gold_label = data["specific_questions"] + data["cloze_questions"]
+        if len(gold_label) < 3:
+            continue
 
         prompt = PROMPT_TEMPLATE.format(article=data["article"])
         response = client.chat.completions.create(

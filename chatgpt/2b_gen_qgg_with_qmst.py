@@ -42,6 +42,7 @@ def feedback_generation(model,tokenizer, input_ids, feedback_times = 3):
         decode_questions = re.sub(re.escape(tokenizer.eos_token),'',decode_questions)
         decode_questions = re.sub(re.escape('[Q:]'),'',decode_questions)
         decode_questions = re.sub(re.escape('[A:]'),'',decode_questions)
+        decode_questions = decode_questions.replace("  "," ")
         if tokenizer.bos_token is not None:
             decode_questions = re.sub(re.escape(tokenizer.bos_token),'',decode_questions)
         decode_questions = decode_questions.strip()
@@ -71,7 +72,7 @@ if __name__ == "__main__":
         encodes = tokenizer.encode(article,add_special_tokens=True)
         input_ids = torch.tensor([encodes])
         input_ids = input_ids.to("cuda")
-        pred_questions = feedback_generation(model,tokenizer,input_ids,10)
+        pred_questions = feedback_generation(model,tokenizer,input_ids,6)
         print(pred_questions)
 
         #
