@@ -7,7 +7,8 @@ PROMPT_TEMPLATE = """
 Please generate a diverse set of questions based on the article. 
 These questions can vary in format, including factual questions or fill-in-the-blank types. 
 For instance, "What is the capital of France?" exemplifies a factual question, 
-while "The human body is composed of approximately __________ percent water." represents the fill-in-the-blank type. 
+while "The human body is composed of approximately _ percent water." represents the fill-in-the-blank type,
+and ""Which of the following is the best title for the passage?"" is a summarization question.
 Ensure that the question set is answerable and covers the content of the article. Please list the output in a Markdown list.
 
 Given article:

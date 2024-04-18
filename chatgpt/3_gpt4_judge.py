@@ -6,8 +6,8 @@ import os
 
 PROMPT_TEMPLATE = """
 Please read the article and choose one question group from [Question group A] or [Question group B] that you think is better. 
-These questions can take various forms, including factual questions, general questions, or fill-in-the-blank types.
-"What is the capital of France?" and "The atomic number of carbon is _." are examples of the various forms questions can take.
+These questions can take various forms, including factual questions, summarization questions, or fill-in-the-blank types.
+"What is the capital of France?","Which of the following is the best title for the passage?" and "The atomic number of carbon is _." are examples of the various forms questions can take.
 - Questions within the group that are similar are considered deductions. 
 - If the group of questions can cover the context of the article, it is considered a bonus.
 - If there are multiple question types within the question group, it is considered a bonus.
