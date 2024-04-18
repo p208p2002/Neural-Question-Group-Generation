@@ -65,24 +65,7 @@ if __name__ == "__main__":
     qmst_ga_type_g = analyze_general(qmst_data, "qmst_ga")
     qmst_ga_type_f = 1.0 - (qmst_ga_type_c + qmst_ga_type_g)
 
-    # print(f"{gpt_topk=}")
-    # print(f"{gpt_ga=}")
-
     print(f"gpt_topk {gpt_topk_type_c=} {gpt_topk_type_g=} {gpt_topk_type_f=}")
     print(f"gpt_ga {gpt_ga_type_c=} {gpt_ga_type_g=} {gpt_ga_type_f=}")
     print(f"qmst {qmst_type_c=} {qmst_type_g=} {qmst_type_f=}")
     print(f"qmst_ga {qmst_ga_type_c=} {qmst_ga_type_g=} {qmst_ga_type_f=}")
-
-    # # gold label
-    # stat_gold_labels = []
-    # for data in chat_gpt_data:
-    #     data = data["data"]
-    #     qg_size = len(data["specific_questions"]+data["cloze_questions"])
-    #     count_true_cloze = 0
-    #     for q in data["cloze_questions"]:
-    #         if '_' in q:
-    #             count_true_cloze += 1
-    #     stat_gold_labels.append(count_true_cloze/qg_size)
-
-    # gold_label = statistics.mean(stat_gold_labels)
-    # print(f"{gold_label=}")
