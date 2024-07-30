@@ -8,13 +8,18 @@
 <img src="https://img.shields.io/badge/🤗 HF Model Hub-ffea00?style=for-the-badge&logoColor=white">
 </a>
 
-<a target="_blank" href="https://qgg-demo.nlpnchu.org">
+<a target="_blank" href="https://huggingface.co/spaces/p208p2002/Question-Group-Generator">
 <img src="https://img.shields.io/badge/💻 Live Demo-78ab78?style=for-the-badge&logoColor=white">
 </a>
+<--
+<a target="_blank" href="https://huggingface.co/spaces/p208p2002/Question-Group-Generator">
+<img src="https://img.shields.io/badge/💻 Live Demo-78ab78?style=for-the-badge&logoColor=white">
+</a>
+-->
 </span>
 
 ## Components
-There are some practical components that are independent and spread across multiple repositories:
+There are some components spread across multiple repositories:
 
 - [QGG-RACE dataset](https://github.com/p208p2002/QGG-RACE-dataset)
 - [qgg-demo](https://github.com/p208p2002/qgg-demo)
