@@ -17,6 +17,9 @@
 </a>
 </span>
 
+## Abstract
+Question generation (QG) task plays a crucial role in adaptive learning. While significant QG performance advancements are reported, the existing QG studies are still far from practical usage. One point that needs strengthening is to consider the generation of question group , which remains untouched. For forming a question group, intra-factors among generated questions should be considered. This paper proposes a two-stage framework by combining neural language models and genetic algorithms for addressing the issue of question group generation.
+
 ## Components
 There are some components spread across multiple repositories:
 
