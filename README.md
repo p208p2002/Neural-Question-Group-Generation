@@ -1,6 +1,6 @@
 # EQGG: Automatic Question Group Generation
 <span>
-<a target="_blank" href="https://github.com/p208p2002/Automatic-Question-Group-Generation">
+<a target="_blank" href="https://github.com/p208p2002/Neural-Question-Group-Generation">
 <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white">
 </a>
 
