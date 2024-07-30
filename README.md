@@ -9,11 +9,11 @@
 </a>
 
 <a target="_blank" href="https://huggingface.co/spaces/p208p2002/Question-Group-Generator">
-<img src="https://img.shields.io/badge/💻 Live Demo-78ab78?style=for-the-badge&logoColor=white">
+<img src="https://img.shields.io/badge/💻 Demo (HF)-78ab78?style=for-the-badge&logoColor=white">
 </a>
 
-<a target="_blank" href="https://huggingface.co/spaces/p208p2002/Question-Group-Generator">
-<img src="https://img.shields.io/badge/💻 Live Demo-5b62a4?style=for-the-badge&logoColor=white">
+<a target="_blank" href="https://qgg-demo.nlpnchu.org/">
+<img src="https://img.shields.io/badge/💻 Demo (NCHU)-5b62a4?style=for-the-badge&logoColor=white">
 </a>
 </span>
 
