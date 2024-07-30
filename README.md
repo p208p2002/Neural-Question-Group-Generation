@@ -14,7 +14,7 @@
 </span>
 
 ## Components
-There are some practical things or components that are independent and spread across multiple repos
+There are some practical components that are independent and spread across multiple repositories:
 
 - [QGG-RACE dataset](https://github.com/p208p2002/QGG-RACE-dataset)
 - [qgg-demo](https://github.com/p208p2002/qgg-demo)
@@ -40,4 +40,20 @@ python setup_scorer.py
 ## Training
 ```
 python train_xxx.py -m'message to note for this training'
+```
+
+## Citation
+If your research references the relevant content, please cite:
+```bibtex
+@ARTICLE{10609322,
+  author={Huang, Po-Chun and Chan, Ying-Hong and Yang, Ching-Yu and Chen, Hung-Yuan and Fan, Yao-Chung},
+  journal={IEEE Transactions on Learning Technologies}, 
+  title={EQGG: Automatic Question Group Generation}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={1-14},
+  keywords={Task analysis;Context modeling;Question generation;Training;Redundancy;Fans;Employment;Neural Question Generation;Natural Language Generation;Reading Comprehension Testing},
+  doi={10.1109/TLT.2024.3430225}
+}
 ```
